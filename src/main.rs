@@ -2,6 +2,7 @@ use ndarray::{Array2};
 
 type Float = f64;
 
+// TODO: make this generic
 enum Distance {
     L2(Float),
 }
@@ -19,6 +20,9 @@ struct ClusteringResult {
 
 impl RfDbscan {
     fn cluster(&self, input: Array2<Float>) -> ClusteringResult {
+        // https://github.com/savish/dbscan
+
+
         ClusteringResult {
             clusters: vec![],
             remaining: Array2::zeros((0, 2)),

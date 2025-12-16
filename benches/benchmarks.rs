@@ -4,18 +4,12 @@
 //! ```
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use rand::{Rng, rng};
 use rf_dbscan::{
     RfDbscan,
+    generate::generate_uniform,
     proximity::{Norm, Proximity},
-    types::{IndexType, MatrixType},
 };
 use std::hint::black_box;
-
-fn generate_uniform<const NCOLS: usize>(n_points: IndexType) -> MatrixType<NCOLS> {
-    let mut rng = rng();
-    MatrixType::<NCOLS>::from_fn(n_points as usize, |_, _| rng.random_range(-10.0..10.0))
-}
 
 fn benchmark_uniform(c: &mut Criterion) {
     let rf_dbscan = RfDbscan {
@@ -27,7 +21,7 @@ fn benchmark_uniform(c: &mut Criterion) {
     let input = generate_uniform::<2>(1000);
 
     c.bench_function("uniform 1000", |b| {
-        b.iter(|| rf_dbscan.cluster(black_box(&input)))
+        b.iter(|| black_box(rf_dbscan.cluster(&input)))
     });
 }
 

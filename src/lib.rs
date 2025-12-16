@@ -3,6 +3,7 @@ use crate::{
     types::{FloatType, MatrixType},
 };
 
+pub mod generate;
 pub mod proximity;
 pub mod types;
 
@@ -13,10 +14,11 @@ pub struct RfDbscan<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> RfDbscan<NCOLS> {
-    pub fn cluster(&self, input: &MatrixType<NCOLS>) {
+    pub fn cluster(&self, input: &MatrixType<NCOLS>) -> Vec<Vec<FloatType>> {
         // Calculate every distance to every other distance as a dummy
-        input.row_iter().for_each(|anchor| {
-            self.eps.within_proximity((&anchor).into(), input);
-        });
+        input
+            .row_iter()
+            .map(|anchor| self.eps.distance(&anchor, input))
+            .collect()
     }
 }

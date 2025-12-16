@@ -1,8 +1,8 @@
 use crate::types::{FloatType, MatrixType};
-use nalgebra::{Const, LpNorm, MatrixView, OMatrix, UniformNorm};
+use nalgebra::{Const, LpNorm, Matrix, OMatrix, Storage, UniformNorm};
 
-type RowVector<'a, const NCOLS: usize> = OMatrix<FloatType, Const<1>, Const<NCOLS>>;
-type RowVectorView<'a, const NCOLS: usize> = MatrixView<'a, FloatType, Const<1>, Const<NCOLS>>;
+type RowVectorType<const NCOLS: usize> = OMatrix<FloatType, Const<1>, Const<NCOLS>>;
+type RowVectorViewType<const NCOLS: usize, S> = Matrix<FloatType, Const<1>, Const<NCOLS>, S>;
 
 /// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
 pub enum Norm {
@@ -13,7 +13,7 @@ pub enum Norm {
 }
 
 impl Norm {
-    fn apply<const NCOLS: usize>(&self, a: RowVector<NCOLS>) -> FloatType {
+    fn apply<const NCOLS: usize>(&self, a: RowVectorType<NCOLS>) -> FloatType {
         match self {
             Norm::L1 => a.apply_norm(&LpNorm(1)),
             Norm::L2 => a.norm(),
@@ -39,22 +39,28 @@ impl<const NCOLS: usize> Proximity<NCOLS> {
         }
     }
 
-    pub fn distance(
+    pub fn distance<S>(
         &self,
-        anchor: RowVectorView<NCOLS>,
+        anchor: &RowVectorViewType<NCOLS, S>,
         query: &MatrixType<NCOLS>,
-    ) -> Vec<FloatType> {
+    ) -> Vec<FloatType>
+    where
+        S: Storage<FloatType, Const<1>, Const<NCOLS>>,
+    {
         query
             .row_iter()
             .map(|query| self.norm.apply(anchor - query))
             .collect()
     }
 
-    pub fn within_proximity(
+    pub fn within_proximity<S>(
         &self,
-        anchor: RowVectorView<NCOLS>,
+        anchor: &RowVectorViewType<NCOLS, S>,
         query: &MatrixType<NCOLS>,
-    ) -> Vec<bool> {
+    ) -> Vec<bool>
+    where
+        S: Storage<FloatType, Const<1>, Const<NCOLS>>,
+    {
         query
             .row_iter()
             .map(|query| self.norm.apply(anchor - query) <= self.eps)

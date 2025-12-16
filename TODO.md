@@ -4,13 +4,14 @@
 - [ ] Write benchmark
 - [ ] Write python bindings?
 - Extend with:
-    - [ ] Linf distance
+    - [x] Linf distance
     - [ ] Rasterization
     - [ ] KD-tree
 
 ## Low-level
-- [ ] Turn distance into a generic + trait
+- [ ] Make proximity calc batched
+- [ ] Add benchmarks
 
 
 ## Housekeeping
-- Add LICENSE
+- [ ] Add LICENSE

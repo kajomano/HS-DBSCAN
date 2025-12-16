@@ -6,13 +6,13 @@
 // https://github.com/savish/dbscan
 
 use rf_dbscan::{
-    RfDbscan,
+    dbscan::RfDbscan,
     generate::generate_uniform,
     proximity::{Norm, Proximity},
 };
 
 fn main() {
-    let rf_dbscan = RfDbscan::<2> {
+    let rf_dbscan = RfDbscan {
         raster_res: 1.0,
         eps: Proximity::new(10.0, Norm::L2),
         min_pts: 10,

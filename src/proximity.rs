@@ -13,12 +13,12 @@ pub enum Norm {
 }
 
 impl Norm {
-    fn apply<const NCOLS: usize>(&self, a: RowVectorType<NCOLS>) -> FloatType {
+    fn apply<const NCOLS: usize>(&self, vec: RowVectorType<NCOLS>) -> FloatType {
         match self {
-            Norm::L1 => a.apply_norm(&LpNorm(1)),
-            Norm::L2 => a.norm(),
-            Norm::L2Squared => a.norm_squared(),
-            Norm::Linf => a.apply_norm(&UniformNorm),
+            Norm::L1 => vec.apply_norm(&LpNorm(1)),
+            Norm::L2 => vec.norm(),
+            Norm::L2Squared => vec.norm_squared(),
+            Norm::Linf => vec.apply_norm(&UniformNorm),
         }
     }
 }

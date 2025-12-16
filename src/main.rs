@@ -1,14 +1,14 @@
 use nalgebra::{Const, Dyn, OMatrix};
-use rf_dbscan::types::{FloatType, IndexType, MatrixType};
+use rf_dbscan::{
+    proximity::{Norm, Proximity},
+    types::{FloatType, IndexType, MatrixType},
+};
 
-// TODO: make this generic
-enum Distance {
-    L2(FloatType),
-}
+// https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html
 
 struct RfDbscan<const NCOLS: usize> {
     raster_res: FloatType,
-    eps: Distance,
+    eps: Proximity<NCOLS>,
     min_pts: usize,
 }
 
@@ -23,7 +23,7 @@ impl<const NCOLS: usize> RfDbscan<NCOLS> {
 fn main() {
     let rf_dbscan = RfDbscan {
         raster_res: 1.0,
-        eps: Distance::L2(1.0),
+        eps: Proximity::new(10.0, Norm::L2),
         min_pts: 10,
     };
 

@@ -1,32 +1,22 @@
-use ndarray::{Array2};
-
-type Float = f64;
+use nalgebra::{Const, Dyn, OMatrix};
+use rf_dbscan::types::{FloatType, IndexType, MatrixType};
 
 // TODO: make this generic
 enum Distance {
-    L2(Float),
+    L2(FloatType),
 }
 
-struct RfDbscan {
-    raster_res: Float,
+struct RfDbscan<const NCOLS: usize> {
+    raster_res: FloatType,
     eps: Distance,
     min_pts: usize,
 }
 
-struct ClusteringResult {
-    clusters: Vec<Array2<Float>>,
-    remaining: Array2<Float>,
-}
-
-impl RfDbscan {
-    fn cluster(&self, input: Array2<Float>) -> ClusteringResult {
+impl<const NCOLS: usize> RfDbscan<NCOLS> {
+    fn cluster(&self, input: MatrixType<NCOLS>) -> Vec<IndexType> {
         // https://github.com/savish/dbscan
 
-
-        ClusteringResult {
-            clusters: vec![],
-            remaining: Array2::zeros((0, 2)),
-        }
+        vec![]
     }
 }
 
@@ -37,7 +27,7 @@ fn main() {
         min_pts: 10,
     };
 
-    let input = Array2::<Float>::zeros((3, 2));
+    let input = OMatrix::<FloatType, Dyn, Const<2>>::repeat(10, 0.0);
 
     rf_dbscan.cluster(input);
 }

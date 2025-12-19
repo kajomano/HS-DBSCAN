@@ -16,7 +16,10 @@
 - [x] Explore SIMD: Try hand-rolling the dist calc yourself w/ `std::simd` or `wide`
     - does not give considerable speedup, better control over what's happening but painful to write everything by hand
 - [x] Only calculate upper/lower triangle for the distances
-- [ ] Lower FP precision
+- [x] Lower FP precision
+
+- [ ] Immediately calculate if distance is below eps and store that in proximity
+  - [ ] But don't mess up the reusability of `Norm`!
 
 - [ ] Add unit tests for the proximity calcs
 - [ ] Add more benchmarks

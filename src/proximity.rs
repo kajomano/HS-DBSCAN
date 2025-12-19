@@ -1,4 +1,4 @@
-use crate::types::{FloatType, MatrixType, MatrixViewType};
+use crate::types::{FloatType, IndexType, MatrixType, MatrixViewType};
 use nalgebra::{Const, Dyn, LpNorm, OMatrix, OVector, Storage, UniformNorm};
 use std::ops::SubAssign;
 use strum_macros::Display;
@@ -113,35 +113,43 @@ impl ProximityConfig {
 pub enum Proximity {
     MATRIX {
         config: ProximityConfig,
-        distances: OMatrix<FloatType, Dyn, Dyn>,
+        proximities: OMatrix<IndexType, Dyn, Dyn>,
     },
 }
 
 impl Proximity {
     pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
-        let distances = match config.norm {
-            NormConfig::L1 => Self::pairwise_distances(input, L1Norm),
-            NormConfig::L2 => Self::pairwise_distances(input, L2Norm),
-            NormConfig::L2Squared => Self::pairwise_distances(input, L2SquaredNorm),
-            NormConfig::Linf => Self::pairwise_distances(input, LinfNorm),
+        let proximities = match config.norm {
+            NormConfig::L1 => Self::pairwise_proximities(input, L1Norm, config.eps),
+            NormConfig::L2 => Self::pairwise_proximities(input, L2Norm, config.eps),
+            NormConfig::L2Squared => Self::pairwise_proximities(input, L2SquaredNorm, config.eps),
+            NormConfig::Linf => Self::pairwise_proximities(input, LinfNorm, config.eps),
         };
 
         Self::MATRIX {
             config: *config,
-            distances,
+            proximities,
         }
     }
 
-    fn pairwise_distances<const NCOLS: usize, N: Norm>(
+    /// Query the proximity of a point. Both the queried point and the result are indices.
+    pub fn query_proximity(quey_idx: IndexType) -> Vec<IndexType> {
+        
+    }
+
+    /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
+    /// means outside of the proximity, and anything larger than 0 means inside the proximity.
+    fn pairwise_proximities<const NCOLS: usize, N: Norm>(
         input: &MatrixType<NCOLS>,
         norm: N,
-    ) -> OMatrix<FloatType, Dyn, Dyn> {
+        eps: FloatType
+    ) -> OMatrix<IndexType, Dyn, Dyn> {
         let mut buffer = MatrixType::zeros(input.nrows());
-        let mut distances = OMatrix::<FloatType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
+        let mut distances = OMatrix::<IndexType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
 
         let n = input.nrows();
 
-        // Calculate pairwise distances between all input points. Only calculates the lower diagonal!
+        // Calculate pairwise distances. Only calculates the lower diagonal!
         distances
             .column_iter_mut()
             .zip(input.row_iter().enumerate())
@@ -160,7 +168,11 @@ impl Proximity {
                 buffer_view.sub_assign(input_view);
 
                 // Calculate norm and store in distances column
-                distances_col_view.copy_from(&norm.apply_rowise(&buffer_view));
+                let norms = norm.apply_rowise(&buffer_view);
+                let proximities = norms.component_ <= eps
+
+                // Store in distances
+                distances_col_view.copy_from(&(norms ));
             });
 
         // Fill the upper triangle too for ease of later access.

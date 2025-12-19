@@ -24,3 +24,8 @@ fn benchmark_uniform(c: &mut Criterion) {
 
 criterion_group!(benches, benchmark_uniform);
 criterion_main!(benches);
+
+// =====================================================================================================================
+
+// uniform/100             time:   [19.286 µs 19.301 µs 19.319 µs]
+// uniform/1000            time:   [2.6380 ms 2.6397 ms 2.6416 ms]

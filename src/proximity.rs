@@ -1,5 +1,5 @@
-use crate::types::{FloatType, MatrixType};
-use nalgebra::{Dyn, LpNorm, OMatrix, OVector, UniformNorm};
+use crate::types::{FloatType, MatrixType, MatrixViewType};
+use nalgebra::{Const, Dyn, LpNorm, OMatrix, OVector, Storage, UniformNorm};
 use std::ops::SubAssign;
 
 /// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
@@ -13,18 +13,18 @@ pub enum NormConfig {
 }
 
 trait Norm {
-    fn apply_rowise<const NCOLS: usize>(
+    fn apply_rowise<const NCOLS: usize, S: Storage<FloatType, Dyn, Const<NCOLS>>>(
         &self,
-        input: &MatrixType<NCOLS>,
+        input: &MatrixViewType<NCOLS, S>,
     ) -> OVector<FloatType, Dyn>;
 }
 
 struct L1Norm;
 
 impl Norm for L1Norm {
-    fn apply_rowise<const NCOLS: usize>(
+    fn apply_rowise<const NCOLS: usize, S: Storage<FloatType, Dyn, Const<NCOLS>>>(
         &self,
-        input: &MatrixType<NCOLS>,
+        input: &MatrixViewType<NCOLS, S>,
     ) -> OVector<FloatType, Dyn> {
         OVector::<FloatType, Dyn>::from_iterator(
             input.nrows(),
@@ -36,9 +36,9 @@ impl Norm for L1Norm {
 struct L2Norm;
 
 impl Norm for L2Norm {
-    fn apply_rowise<const NCOLS: usize>(
+    fn apply_rowise<const NCOLS: usize, S: Storage<FloatType, Dyn, Const<NCOLS>>>(
         &self,
-        input: &MatrixType<NCOLS>,
+        input: &MatrixViewType<NCOLS, S>,
     ) -> OVector<FloatType, Dyn> {
         OVector::<FloatType, Dyn>::from_iterator(
             input.nrows(),
@@ -50,9 +50,9 @@ impl Norm for L2Norm {
 struct L2SquaredNorm;
 
 impl Norm for L2SquaredNorm {
-    fn apply_rowise<const NCOLS: usize>(
+    fn apply_rowise<const NCOLS: usize, S: Storage<FloatType, Dyn, Const<NCOLS>>>(
         &self,
-        input: &MatrixType<NCOLS>,
+        input: &MatrixViewType<NCOLS, S>,
     ) -> OVector<FloatType, Dyn> {
         OVector::<FloatType, Dyn>::from_iterator(
             input.nrows(),
@@ -64,9 +64,9 @@ impl Norm for L2SquaredNorm {
 struct LinfNorm;
 
 impl Norm for LinfNorm {
-    fn apply_rowise<const NCOLS: usize>(
+    fn apply_rowise<const NCOLS: usize, S: Storage<FloatType, Dyn, Const<NCOLS>>>(
         &self,
-        input: &MatrixType<NCOLS>,
+        input: &MatrixViewType<NCOLS, S>,
     ) -> OVector<FloatType, Dyn> {
         OVector::<FloatType, Dyn>::from_iterator(
             input.nrows(),
@@ -138,21 +138,32 @@ impl Proximity {
         let mut buffer = MatrixType::zeros(input.nrows());
         let mut distances = OMatrix::<FloatType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
 
-        // Calculate pairwise distances between all input points
-        distances.column_iter_mut().zip(input.row_iter()).for_each(
-            |(mut distances_col, anchor)| {
+        let n = input.nrows();
+
+        // Calculate pairwise distances between all input points. Only calculates the lower diagonal!
+        distances
+            .column_iter_mut()
+            .zip(input.row_iter().enumerate())
+            .for_each(|(mut distances_col, (i, anchor))| {
+                // View for only working on the lower triangle
+                let input_view = input.rows(i, n - i);
+                let mut buffer_view = buffer.rows_mut(0, n - i);
+                let mut distances_col_view = distances_col.rows_mut(i, n - i);
+
                 // buffer = anchor.rep()
-                for mut row in buffer.row_iter_mut() {
+                for mut row in buffer_view.row_iter_mut() {
                     row.copy_from(&anchor)
                 }
 
                 // buffer = buffer - input
-                buffer.sub_assign(input);
+                buffer_view.sub_assign(input_view);
 
                 // Calculate norm and store in distances column
-                distances_col.copy_from(&norm.apply_rowise(input));
-            },
-        );
+                distances_col_view.copy_from(&norm.apply_rowise(&buffer_view));
+            });
+
+        // Fill the upper triangle too for ease of later access.
+        distances.fill_upper_triangle_with_lower_triangle();
 
         distances
     }

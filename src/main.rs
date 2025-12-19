@@ -19,6 +19,5 @@ fn main() {
     };
 
     let input = generate_uniform::<2>(1000, 10.0);
-
     rf_dbscan.cluster(&input);
 }

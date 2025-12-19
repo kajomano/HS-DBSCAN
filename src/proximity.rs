@@ -1,9 +1,10 @@
 use crate::types::{FloatType, MatrixType, MatrixViewType};
 use nalgebra::{Const, Dyn, LpNorm, OMatrix, OVector, Storage, UniformNorm};
 use std::ops::SubAssign;
+use strum_macros::Display;
 
 /// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Display)]
 pub enum NormConfig {
     L1,
     #[default]

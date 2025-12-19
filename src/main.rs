@@ -8,20 +8,17 @@
 use rf_dbscan::{
     dbscan::RfDbscan,
     generate::generate_uniform,
-    proximity::{Norm, Proximity},
+    proximity::{NormConfig, ProximityConfig},
 };
 
 fn main() {
-    let rf_dbscan = RfDbscan {
+    let rf_dbscan = RfDbscan::<2> {
         raster_res: 1.0,
-        eps: Proximity::new(10.0, Norm::L2),
+        proximity: ProximityConfig::new(10.0, NormConfig::L2),
         min_pts: 10,
     };
 
-    let input = generate_uniform::<2>(1000);
+    let input = generate_uniform::<2>(1000, 10.0);
 
-    rf_dbscan
-        .cluster(&input)
-        .iter()
-        .for_each(|row| println!("{:?}", row));
+    rf_dbscan.cluster(&input);
 }

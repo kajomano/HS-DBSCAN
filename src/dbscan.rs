@@ -1,20 +1,28 @@
 use crate::{
-    proximity::Proximity,
+    proximity::{Proximity, ProximityConfig},
     types::{FloatType, MatrixType},
 };
 
+#[derive(Clone, Copy, Debug)]
 pub struct RfDbscan<const NCOLS: usize> {
     pub raster_res: FloatType,
-    pub eps: Proximity<NCOLS>,
+    pub proximity: ProximityConfig,
     pub min_pts: usize,
 }
 
+impl<const NCOLS: usize> Default for RfDbscan<NCOLS> {
+    fn default() -> Self {
+        Self {
+            raster_res: 1.0,
+            proximity: Default::default(),
+            min_pts: 10,
+        }
+    }
+}
+
 impl<const NCOLS: usize> RfDbscan<NCOLS> {
-    pub fn cluster(&self, input: &MatrixType<NCOLS>) -> Vec<Vec<bool>> {
-        // Calculate every distance to every other distance as a dummy
-        input
-            .row_iter()
-            .map(|anchor| self.eps.within_proximity(&anchor, input))
-            .collect()
+    pub fn cluster(&self, input: &MatrixType<NCOLS>) {
+        // Create a proximity calculator
+        Proximity::new(input, &self.proximity);
     }
 }

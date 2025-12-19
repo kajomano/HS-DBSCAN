@@ -1,69 +1,159 @@
 use crate::types::{FloatType, MatrixType};
-use nalgebra::{Const, LpNorm, Matrix, OMatrix, Storage, UniformNorm};
-
-type RowVectorType<const NCOLS: usize> = OMatrix<FloatType, Const<1>, Const<NCOLS>>;
-type RowVectorViewType<const NCOLS: usize, S> = Matrix<FloatType, Const<1>, Const<NCOLS>, S>;
+use nalgebra::{Dyn, LpNorm, OMatrix, OVector, UniformNorm};
+use std::ops::SubAssign;
 
 /// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
-pub enum Norm {
+#[derive(Clone, Copy, Debug, Default)]
+pub enum NormConfig {
     L1,
+    #[default]
     L2,
     L2Squared,
     Linf,
 }
 
-impl Norm {
-    fn apply<const NCOLS: usize>(&self, vec: RowVectorType<NCOLS>) -> FloatType {
-        match self {
-            Norm::L1 => vec.apply_norm(&LpNorm(1)),
-            Norm::L2 => vec.norm(),
-            Norm::L2Squared => vec.norm_squared(),
-            Norm::Linf => vec.apply_norm(&UniformNorm),
-        }
+trait Norm {
+    fn apply_rowise<const NCOLS: usize>(
+        &self,
+        input: &MatrixType<NCOLS>,
+    ) -> OVector<FloatType, Dyn>;
+}
+
+struct L1Norm;
+
+impl Norm for L1Norm {
+    fn apply_rowise<const NCOLS: usize>(
+        &self,
+        input: &MatrixType<NCOLS>,
+    ) -> OVector<FloatType, Dyn> {
+        OVector::<FloatType, Dyn>::from_iterator(
+            input.nrows(),
+            input.row_iter().map(|row| row.apply_norm(&LpNorm(1))),
+        )
     }
 }
 
-pub struct Proximity<const NCOLS: usize> {
-    eps: FloatType,
-    norm: Norm,
+struct L2Norm;
+
+impl Norm for L2Norm {
+    fn apply_rowise<const NCOLS: usize>(
+        &self,
+        input: &MatrixType<NCOLS>,
+    ) -> OVector<FloatType, Dyn> {
+        OVector::<FloatType, Dyn>::from_iterator(
+            input.nrows(),
+            input.row_iter().map(|row| row.norm()),
+        )
+    }
 }
 
-impl<const NCOLS: usize> Proximity<NCOLS> {
-    pub fn new(eps: FloatType, norm: Norm) -> Self {
+struct L2SquaredNorm;
+
+impl Norm for L2SquaredNorm {
+    fn apply_rowise<const NCOLS: usize>(
+        &self,
+        input: &MatrixType<NCOLS>,
+    ) -> OVector<FloatType, Dyn> {
+        OVector::<FloatType, Dyn>::from_iterator(
+            input.nrows(),
+            input.row_iter().map(|row| row.norm_squared()),
+        )
+    }
+}
+
+struct LinfNorm;
+
+impl Norm for LinfNorm {
+    fn apply_rowise<const NCOLS: usize>(
+        &self,
+        input: &MatrixType<NCOLS>,
+    ) -> OVector<FloatType, Dyn> {
+        OVector::<FloatType, Dyn>::from_iterator(
+            input.nrows(),
+            input.row_iter().map(|row| row.apply_norm(&UniformNorm)),
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ProximityConfig {
+    eps: FloatType,
+    norm: NormConfig,
+}
+
+impl Default for ProximityConfig {
+    fn default() -> Self {
+        Self::new(3.0, Default::default())
+    }
+}
+
+impl ProximityConfig {
+    pub fn new(eps: FloatType, norm: NormConfig) -> Self {
         Self {
             eps: match norm {
-                Norm::L2Squared => eps * eps,
+                NormConfig::L2Squared => eps * eps,
                 _ => eps,
             },
             norm,
         }
     }
 
-    pub fn distance<S>(
-        &self,
-        anchor: &RowVectorViewType<NCOLS, S>,
-        query: &MatrixType<NCOLS>,
-    ) -> Vec<FloatType>
-    where
-        S: Storage<FloatType, Const<1>, Const<NCOLS>>,
-    {
-        query
-            .row_iter()
-            .map(|query| self.norm.apply(anchor - query))
-            .collect()
+    pub fn eps(&self) -> FloatType {
+        self.eps
     }
 
-    pub fn within_proximity<S>(
-        &self,
-        anchor: &RowVectorViewType<NCOLS, S>,
-        query: &MatrixType<NCOLS>,
-    ) -> Vec<bool>
-    where
-        S: Storage<FloatType, Const<1>, Const<NCOLS>>,
-    {
-        query
-            .row_iter()
-            .map(|query| self.norm.apply(anchor - query) <= self.eps)
-            .collect()
+    pub fn norm(&self) -> NormConfig {
+        self.norm
+    }
+}
+
+// TODO: KD-tree
+/// RAII struct for handling proximity
+pub enum Proximity {
+    MATRIX {
+        config: ProximityConfig,
+        distances: OMatrix<FloatType, Dyn, Dyn>,
+    },
+}
+
+impl Proximity {
+    pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
+        let distances = match config.norm {
+            NormConfig::L1 => Self::pairwise_distances(input, L1Norm),
+            NormConfig::L2 => Self::pairwise_distances(input, L2Norm),
+            NormConfig::L2Squared => Self::pairwise_distances(input, L2SquaredNorm),
+            NormConfig::Linf => Self::pairwise_distances(input, LinfNorm),
+        };
+
+        Self::MATRIX {
+            config: *config,
+            distances,
+        }
+    }
+
+    fn pairwise_distances<const NCOLS: usize, N: Norm>(
+        input: &MatrixType<NCOLS>,
+        norm: N,
+    ) -> OMatrix<FloatType, Dyn, Dyn> {
+        let mut buffer = MatrixType::zeros(input.nrows());
+        let mut distances = OMatrix::<FloatType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
+
+        // Calculate pairwise distances between all input points
+        distances.column_iter_mut().zip(input.row_iter()).for_each(
+            |(mut distances_col, anchor)| {
+                // buffer = anchor.rep()
+                for mut row in buffer.row_iter_mut() {
+                    row.copy_from(&anchor)
+                }
+
+                // buffer = buffer - input
+                buffer.sub_assign(input);
+
+                // Calculate norm and store in distances column
+                distances_col.copy_from(&norm.apply_rowise(input));
+            },
+        );
+
+        distances
     }
 }

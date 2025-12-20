@@ -18,8 +18,10 @@
 - [x] Only calculate upper/lower triangle for the distances
 - [x] Lower FP precision
 
-- [ ] Immediately calculate if distance is below eps and store that in proximity
-  - [ ] But don't mess up the reusability of `Norm`!
+- [x] Immediately calculate if distance is below eps and store that in proximity
+  - [x] But don't mess up the reusability of `Norm`!
+- [ ] Try to avoid the temp vector
+- [ ] Handle weighted points
 
 - [ ] Add unit tests for the proximity calcs
 - [ ] Add more benchmarks

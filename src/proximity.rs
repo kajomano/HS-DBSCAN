@@ -155,17 +155,29 @@ impl Proximity {
                 // buffer = buffer - input
                 buffer_view.sub_assign(input_view);
 
-                // TODO: try to avoid the temp here
-                // Calculate norm and store in proximities column
-                let temp = OVector::<IndexType, Dyn>::from_iterator(
+                // TODO: handle weights
+                // Calculate norm, threshold proximity
+                // NOTE: even though this temp can be avoided, somehow this is faster
+                let temp_proximities = OVector::<IndexType, Dyn>::from_iterator(
                     buffer_view.nrows(),
                     buffer_view
                         .row_iter()
                         .map(|row| if norm.apply(&row) < eps { 1 } else { 0 }),
                 );
 
-                // Store in proximities
-                proximities_col_view.copy_from(&temp);
+                // Store in proximities cole
+                proximities_col_view.copy_from(&temp_proximities);
+
+                // // TODO: Benchmark this on the othe hardware too
+                // // Calculate norm, threshold proximity and store the effective weight in proximities column
+                // proximities_col_view
+                //     .iter_mut()
+                //     .zip(buffer_view.row_iter())
+                //     .for_each(|(proximity, buffer_row)| {
+                //         if norm.apply(&buffer_row) < eps {
+                //             *proximity = 1;
+                //         }
+                //     });
             });
 
         // Fill the upper triangle too for ease of later access.

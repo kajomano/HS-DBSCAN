@@ -14,10 +14,10 @@ use std::{hint::black_box, time::Duration};
 // TODO: Pass the generation function as arg
 fn benchmark_proximity_init_uniform(dbscan: &HsDbscan<2>, c: &mut Criterion) {
     let mut group = c.benchmark_group(format!("prox_init_{}_uniform", dbscan.proximity.norm()));
-    group.measurement_time(Duration::from_secs(10));
+    group.measurement_time(Duration::from_secs(20));
 
-    let input = generate_uniform(100, 10.0);
-    group.bench_function("100", |b| b.iter(|| black_box(dbscan.cluster(&input))));
+    // let input = generate_uniform(100, 10.0);
+    // group.bench_function("100", |b| b.iter(|| black_box(dbscan.cluster(&input))));
 
     let input = generate_uniform(1000, 10.0);
     group.bench_function("1000", |b| b.iter(|| black_box(dbscan.cluster(&input))));
@@ -29,11 +29,11 @@ fn benchmark_proximity_init(c: &mut Criterion) {
     let dbscan = HsDbscan::default();
     benchmark_proximity_init_uniform(&dbscan, c);
 
-    let dbscan = HsDbscan {
-        proximity: ProximityConfig::new(ProximityConfig::default().eps(), NormConfig::L1),
-        ..Default::default()
-    };
-    benchmark_proximity_init_uniform(&dbscan, c);
+    // let dbscan = HsDbscan {
+    //     proximity: ProximityConfig::new(ProximityConfig::default().eps(), NormConfig::L1),
+    //     ..Default::default()
+    // };
+    // benchmark_proximity_init_uniform(&dbscan, c);
 }
 
 criterion_group!(benches, benchmark_proximity_init);

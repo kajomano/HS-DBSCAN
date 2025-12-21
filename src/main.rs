@@ -7,7 +7,7 @@
 
 use hs_dbscan::{
     dbscan::HsDbscan,
-    generate::generate_uniform,
+    generate::{Generate, Uniform},
     proximity::{NormConfig, ProximityConfig},
 };
 
@@ -18,6 +18,6 @@ fn main() {
         min_pts: 10,
     };
 
-    let input = generate_uniform::<2>(5, 10.0);
+    let input = Uniform { extent: 10.0 }.generate(5);
     hs_dbscan.cluster(&input);
 }

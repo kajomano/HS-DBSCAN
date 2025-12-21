@@ -24,6 +24,7 @@
   - [ ] Redo benchmark on target hardware
 - [ ] Handle weighted points
 
+- [x] Pass the data generation as a function arg
 - [ ] Add unit tests for the proximity calcs
 - [ ] Add more benchmarks
 

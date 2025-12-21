@@ -4,13 +4,13 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug)]
-pub struct RfDbscan<const NCOLS: usize> {
+pub struct HsDbscan<const NCOLS: usize> {
     pub raster_res: FloatType,
     pub proximity: ProximityConfig,
     pub min_pts: usize,
 }
 
-impl<const NCOLS: usize> Default for RfDbscan<NCOLS> {
+impl<const NCOLS: usize> Default for HsDbscan<NCOLS> {
     fn default() -> Self {
         Self {
             raster_res: 1.0,
@@ -20,7 +20,7 @@ impl<const NCOLS: usize> Default for RfDbscan<NCOLS> {
     }
 }
 
-impl<const NCOLS: usize> RfDbscan<NCOLS> {
+impl<const NCOLS: usize> HsDbscan<NCOLS> {
     pub fn cluster(&self, input: &MatrixType<NCOLS>) {
         // Create a proximity calculator
         Proximity::new(input, &self.proximity);

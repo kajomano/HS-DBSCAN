@@ -1,5 +1,5 @@
 [package]
-name = "rf_dbscan"
+name = "hs_dbscan"
 version = "0.1.0"
 edition = "2024"
 

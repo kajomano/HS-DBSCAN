@@ -4,15 +4,15 @@
 //! ```
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use rf_dbscan::{
-    dbscan::RfDbscan,
+use hs_dbscan::{
+    dbscan::HsDbscan,
     generate::generate_uniform,
     proximity::{NormConfig, ProximityConfig},
 };
 use std::{hint::black_box, time::Duration};
 
 // TODO: Pass the generation function as arg
-fn benchmark_proximity_init_uniform(dbscan: &RfDbscan<2>, c: &mut Criterion) {
+fn benchmark_proximity_init_uniform(dbscan: &HsDbscan<2>, c: &mut Criterion) {
     let mut group = c.benchmark_group(format!("prox_init_{}_uniform", dbscan.proximity.norm()));
     group.measurement_time(Duration::from_secs(10));
 
@@ -26,10 +26,10 @@ fn benchmark_proximity_init_uniform(dbscan: &RfDbscan<2>, c: &mut Criterion) {
 }
 
 fn benchmark_proximity_init(c: &mut Criterion) {
-    let dbscan = RfDbscan::default();
+    let dbscan = HsDbscan::default();
     benchmark_proximity_init_uniform(&dbscan, c);
 
-    let dbscan = RfDbscan {
+    let dbscan = HsDbscan {
         proximity: ProximityConfig::new(ProximityConfig::default().eps(), NormConfig::L1),
         ..Default::default()
     };

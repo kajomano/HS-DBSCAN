@@ -28,7 +28,7 @@
 
 - [x] Pass the data generation as a function arg
 - [ ] Add unit tests for the proximity calcs
-- [ ] Add query benchmarks
+- [x] Add query benchmarks
 
 
 

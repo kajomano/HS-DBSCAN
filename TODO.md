@@ -24,9 +24,12 @@
   - [ ] Redo benchmark on target hardware
 - [ ] Handle weighted points
 
+- [x] Add query function to proximity
+
 - [x] Pass the data generation as a function arg
 - [ ] Add unit tests for the proximity calcs
-- [ ] Add more benchmarks
+- [ ] Add query benchmarks
+
 
 
 ## Issues

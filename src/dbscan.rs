@@ -1,5 +1,5 @@
 use crate::{
-    proximity::{Proximity, ProximityConfig},
+    proximity::{MatrixProximity, Proximity, ProximityConfig},
     types::{FloatType, MatrixType},
 };
 
@@ -23,6 +23,8 @@ impl<const NCOLS: usize> Default for HsDbscan<NCOLS> {
 impl<const NCOLS: usize> HsDbscan<NCOLS> {
     pub fn cluster(&self, input: &MatrixType<NCOLS>) {
         // Create a proximity calculator
-        Proximity::new(input, &self.proximity);
+        let prox = MatrixProximity::new(input, &self.proximity);
+
+        prox.query(0);
     }
 }

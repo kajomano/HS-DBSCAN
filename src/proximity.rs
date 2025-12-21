@@ -1,5 +1,5 @@
 use crate::types::{FloatType, IndexType, MatrixType};
-use nalgebra::{Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm};
+use nalgebra::{Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, VectorView};
 use std::ops::SubAssign;
 use strum_macros::Display;
 
@@ -101,16 +101,19 @@ impl ProximityConfig {
     }
 }
 
-// TODO: KD-tree
-/// RAII struct for handling proximity
-pub enum Proximity {
-    MATRIX {
-        config: ProximityConfig,
-        proximities: OMatrix<IndexType, Dyn, Dyn>,
-    },
+pub trait Proximity {
+    /// Returns a vector of weights where a weight > 0 means the point is within proximity of the
+    /// query point. The query point is referenced by index.
+    fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn>;
 }
 
-impl Proximity {
+// TODO: KD-tree
+/// RAII struct for handling proximity by precalculating every distance between point pairs.
+pub struct MatrixProximity {
+    proximities: OMatrix<IndexType, Dyn, Dyn>,
+}
+
+impl MatrixProximity {
     pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
         let proximities = match config.norm {
             NormConfig::L1 => Self::pairwise_proximities(input, L1Norm, config.eps),
@@ -119,10 +122,7 @@ impl Proximity {
             NormConfig::Linf => Self::pairwise_proximities(input, LinfNorm, config.eps),
         };
 
-        Self::MATRIX {
-            config: *config,
-            proximities,
-        }
+        Self { proximities }
     }
 
     /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
@@ -184,5 +184,11 @@ impl Proximity {
         proximities.fill_upper_triangle_with_lower_triangle();
 
         proximities
+    }
+}
+
+impl Proximity for MatrixProximity {
+    fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn> {
+        self.proximities.column(query_idx as usize)
     }
 }

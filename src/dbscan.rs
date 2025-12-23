@@ -1,30 +1,30 @@
 use crate::{
-    proximity::{MatrixProximity, Proximity, ProximityConfig},
-    types::{FloatType, MatrixType},
+    proximity::Proximity,
+    types::{IndexType, MatrixType},
 };
 
-#[derive(Clone, Copy, Debug)]
-pub struct HsDbscan<const NCOLS: usize> {
-    pub raster_res: FloatType,
-    pub proximity: ProximityConfig,
-    pub min_pts: usize,
+pub struct Dbscan {
+    min_pts: IndexType,
+    clustered: Vec<bool>,
+    clusters: Vec<IndexType>,
 }
 
-impl<const NCOLS: usize> Default for HsDbscan<NCOLS> {
-    fn default() -> Self {
+impl Dbscan {
+    pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, min_pts: IndexType) -> Self {
         Self {
-            raster_res: 1.0,
-            proximity: Default::default(),
-            min_pts: 10,
+            min_pts,
+            clustered: vec![false; input.nrows()],
+            clusters: vec![0; input.nrows()],
         }
     }
-}
 
-impl<const NCOLS: usize> HsDbscan<NCOLS> {
-    pub fn cluster(&self, input: &MatrixType<NCOLS>) {
-        // Create a proximity calculator
-        let prox = MatrixProximity::new(input, &self.proximity);
-
-        prox.query(0);
+    // TODO: docstring
+    pub fn expand_cluster<P: Proximity>(
+        &mut self,
+        prox: &P,
+        idx: usize,
+        cluster_id: IndexType,
+    ) -> bool {
+        todo!()
     }
 }

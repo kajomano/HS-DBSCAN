@@ -40,3 +40,4 @@
 ## Housekeeping
 - [ ] Add LICENSE
 - [ ] Add README
+- [ ] Clean up TODOs

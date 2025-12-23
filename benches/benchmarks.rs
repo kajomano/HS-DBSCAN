@@ -5,43 +5,42 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
-    dbscan::HsDbscan,
+    HsDbscanConfig,
     generate::{Generate, Uniform},
-    proximity::{MatrixProximity, Proximity},
+    proximity::{MatrixProximity, Proximity, ProximityConfig},
     types::IndexType,
 };
 use std::{hint::black_box, time::Duration};
 
-fn benchmark_proximity_init(dbscan: &HsDbscan<2>, generator: &impl Generate<2>, c: &mut Criterion) {
-    let mut group = c.benchmark_group(format!(
-        "prox_init_{}_{}",
-        dbscan.proximity.norm(),
-        generator
-    ));
+fn benchmark_proximity_init(
+    proximity_config: &ProximityConfig,
+    generator: &impl Generate,
+    c: &mut Criterion,
+) {
+    let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
     group.measurement_time(Duration::from_secs(20));
 
-    let input = generator.generate(100);
+    let input = generator.generate::<2>(100);
     group.bench_function("100", |b| {
-        b.iter(|| black_box(MatrixProximity::new(&input, &dbscan.proximity)))
+        b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
     });
 
-    let input = generator.generate(1000);
+    let input = generator.generate::<2>(1000);
     group.bench_function("1000", |b| {
-        b.iter(|| black_box(MatrixProximity::new(&input, &dbscan.proximity)))
+        b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
     });
 
     group.finish();
 }
 
 fn benchmark_proximity_query(
-    dbscan: &HsDbscan<2>,
-    generator: &impl Generate<2>,
+    proximity_config: &ProximityConfig,
+    generator: &impl Generate,
     c: &mut Criterion,
 ) {
     let mut group = c.benchmark_group(format!(
         "prox_query_{}_{}",
-        dbscan.proximity.norm(),
-        generator
+        proximity_config.norm, generator
     ));
     group.measurement_time(Duration::from_secs(5));
 
@@ -51,20 +50,20 @@ fn benchmark_proximity_query(
         }
     };
 
-    let proximity = MatrixProximity::new(&generator.generate(100), &dbscan.proximity);
-    group.bench_function("1000", |b| b.iter(|| black_box(inner_fn(&proximity, 100))));
+    let proximity = MatrixProximity::new(&generator.generate::<2>(100), &proximity_config);
+    group.bench_function("100", |b| b.iter(|| black_box(inner_fn(&proximity, 100))));
 
-    let proximity = MatrixProximity::new(&generator.generate(1000), &dbscan.proximity);
+    let proximity = MatrixProximity::new(&generator.generate::<2>(1000), &proximity_config);
     group.bench_function("1000", |b| b.iter(|| black_box(inner_fn(&proximity, 1000))));
 
     group.finish();
 }
 
 fn benchmark_proximity(c: &mut Criterion) {
-    let dbscan = HsDbscan::default();
+    let config = HsDbscanConfig::default();
     let generator = Uniform { extent: 10.0 };
-    benchmark_proximity_init(&dbscan, &generator, c);
-    benchmark_proximity_query(&dbscan, &generator, c);
+    benchmark_proximity_init(&config.proximity, &generator, c);
+    benchmark_proximity_query(&config.proximity, &generator, c);
 }
 
 criterion_group!(benches, benchmark_proximity);

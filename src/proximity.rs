@@ -77,27 +77,10 @@ pub struct ProximityConfig {
 
 impl Default for ProximityConfig {
     fn default() -> Self {
-        Self::new(3.0, Default::default())
-    }
-}
-
-impl ProximityConfig {
-    pub fn new(eps: FloatType, norm: NormConfig) -> Self {
         Self {
-            eps: match norm {
-                NormConfig::L2Squared => eps * eps,
-                _ => eps,
-            },
-            norm,
+            eps: 3.0,
+            norm: Default::default(),
         }
-    }
-
-    pub fn eps(&self) -> FloatType {
-        self.eps
-    }
-
-    pub fn norm(&self) -> NormConfig {
-        self.norm
     }
 }
 

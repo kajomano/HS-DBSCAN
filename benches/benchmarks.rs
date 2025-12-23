@@ -45,19 +45,19 @@ fn benchmark_proximity_query(
     ));
     group.measurement_time(Duration::from_secs(5));
 
-    let input = generator.generate(1000);
-    let proximity = MatrixProximity::new(&input, &dbscan.proximity);
-    group.bench_function("1000", |b| {
-        b.iter(|| black_box(proximity_query_inner(&proximity, 1000)))
-    });
+    let inner_fn = |proximity: &MatrixProximity, n: IndexType| {
+        for idx in 0..n {
+            proximity.query(idx);
+        }
+    };
+
+    let proximity = MatrixProximity::new(&generator.generate(100), &dbscan.proximity);
+    group.bench_function("1000", |b| b.iter(|| black_box(inner_fn(&proximity, 100))));
+
+    let proximity = MatrixProximity::new(&generator.generate(1000), &dbscan.proximity);
+    group.bench_function("1000", |b| b.iter(|| black_box(inner_fn(&proximity, 1000))));
 
     group.finish();
-}
-
-fn proximity_query_inner(proximity: &MatrixProximity, n: IndexType) {
-    for idx in 0..n {
-        proximity.query(idx);
-    }
 }
 
 fn benchmark_proximity(c: &mut Criterion) {

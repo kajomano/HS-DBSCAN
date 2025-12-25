@@ -25,9 +25,10 @@
 - [ ] Handle weighted points
 
 - [x] Add query function to proximity
+- [ ] Add unit tests for the proximity calcs
+- [ ] Add unit tests for the dbscan
 
 - [x] Pass the data generation as a function arg
-- [ ] Add unit tests for the proximity calcs
 - [x] Add query benchmarks
 
 

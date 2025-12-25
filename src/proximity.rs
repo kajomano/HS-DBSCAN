@@ -175,3 +175,31 @@ impl Proximity for MatrixProximity {
         self.proximities.column(query_idx as usize)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        proximity::{L1Norm, L2Norm, L2SquaredNorm, LinfNorm, Norm},
+        types::FloatType,
+    };
+    use approx::assert_relative_eq;
+    use nalgebra::RowVector2;
+    use rstest::rstest;
+
+    fn f(num: FloatType) -> FloatType {
+        num
+    }
+
+    #[rstest]
+    #[case(L1Norm, 4.0)]
+    #[case(L2Norm, f(8.0).sqrt())]
+    #[case(L2SquaredNorm, 8.0)]
+    #[case(LinfNorm, 2.0)]
+    fn test_norms<N: Norm>(#[case] norm: N, #[case] expected: FloatType) {
+        assert_relative_eq!(
+            norm.apply(&RowVector2::new(2.0, 2.0)),
+            expected,
+            epsilon = FloatType::EPSILON
+        );
+    }
+}

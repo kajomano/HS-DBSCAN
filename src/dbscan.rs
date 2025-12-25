@@ -79,3 +79,34 @@ impl Dbscan {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use nalgebra::{OMatrix, RowVector2};
+    use rstest::rstest;
+    use crate::types::{IndexType, FloatType, MatrixType};
+
+    #[rstest]
+    #[case([0.0, 0.0], 1, [0.0, 0.0], 1, 1, [0, 0])]
+    // #[case(L1Norm, [1.0, -2.0], 3.0)]
+    // #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
+    // #[case(L2SquaredNorm, [1.0, 2.0], 5.0)]
+    // #[case(LinfNorm, [1.0, 2.0], 2.0)]
+    // #[case(LinfNorm, [1.0, -2.0], 2.0)]
+    fn test_dbscan(
+        #[case] points_1: [FloatType; 2],
+        #[case] n_1: usize,
+        #[case] points_2: [FloatType; 2],
+        #[case] n_2: usize,
+        #[case] min_pts: IndexType,
+        #[case] expected_labels: [IndexType; 2]
+    ) {
+        let mut rows = vec![RowVector2::from_row_slice(&points_1); n_1];
+        rows.append(&mut vec![RowVector2::from_row_slice(&points_1); n_2]);
+
+        let input = MatrixType::from_rows(&rows);
+
+        // TODO: ITT
+        todo!()
+    }
+}

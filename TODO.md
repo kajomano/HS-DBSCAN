@@ -2,7 +2,7 @@
 - [ ] Write dumb implementation
 - [ ] Write unit tests
 - [ ] Write benchmarks
-- [ ] Write python bindings?
+- [ ] Write python bindings
 - Extend with:
     - [x] Other norms
     - [ ] Rasterization

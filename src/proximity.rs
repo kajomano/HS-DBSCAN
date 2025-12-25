@@ -98,10 +98,14 @@ pub struct MatrixProximity {
 
 impl MatrixProximity {
     pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
+        assert!(config.eps >= 0.0);
+
         let proximities = match config.norm {
             NormConfig::L1 => Self::pairwise_proximities(input, L1Norm, config.eps),
             NormConfig::L2 => Self::pairwise_proximities(input, L2Norm, config.eps),
-            NormConfig::L2Squared => Self::pairwise_proximities(input, L2SquaredNorm, config.eps),
+            NormConfig::L2Squared => {
+                Self::pairwise_proximities(input, L2SquaredNorm, config.eps * config.eps)
+            }
             NormConfig::Linf => Self::pairwise_proximities(input, LinfNorm, config.eps),
         };
 
@@ -145,7 +149,7 @@ impl MatrixProximity {
                     buffer_view.nrows(),
                     buffer_view
                         .row_iter()
-                        .map(|row| if norm.apply(&row) < eps { 1 } else { 0 }),
+                        .map(|row| if norm.apply(&row) <= eps { 1 } else { 0 }),
                 );
 
                 // Store in proximities cole
@@ -179,11 +183,14 @@ impl Proximity for MatrixProximity {
 #[cfg(test)]
 mod tests {
     use crate::{
-        proximity::{L1Norm, L2Norm, L2SquaredNorm, LinfNorm, Norm},
-        types::FloatType,
+        proximity::{
+            L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,
+            ProximityConfig,
+        },
+        types::{FloatType, IndexType, MatrixType},
     };
     use approx::assert_relative_eq;
-    use nalgebra::RowVector2;
+    use nalgebra::{Dyn, OMatrix, RowVector2};
     use rstest::rstest;
 
     fn f(num: FloatType) -> FloatType {
@@ -191,15 +198,75 @@ mod tests {
     }
 
     #[rstest]
-    #[case(L1Norm, 4.0)]
-    #[case(L2Norm, f(8.0).sqrt())]
-    #[case(L2SquaredNorm, 8.0)]
-    #[case(LinfNorm, 2.0)]
-    fn test_norms<N: Norm>(#[case] norm: N, #[case] expected: FloatType) {
+    #[case(L1Norm, [1.0, 2.0], 3.0)]
+    #[case(L1Norm, [1.0, -2.0], 3.0)]
+    #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
+    #[case(L2SquaredNorm, [1.0, 2.0], 5.0)]
+    #[case(LinfNorm, [1.0, 2.0], 2.0)]
+    #[case(LinfNorm, [1.0, -2.0], 2.0)]
+    fn test_norms<N: Norm>(
+        #[case] norm: N,
+        #[case] input: [FloatType; 2],
+        #[case] expected: FloatType,
+    ) {
         assert_relative_eq!(
-            norm.apply(&RowVector2::new(2.0, 2.0)),
+            norm.apply(&RowVector2::from_row_slice(&input)),
             expected,
             epsilon = FloatType::EPSILON
+        );
+    }
+
+    #[rstest]
+    #[case([0.0, 0.0], [0.0, 0.0], 3.0, NormConfig::L1, 1)]
+    #[case([0.0, 0.0], [0.0, 0.0], 0.0, NormConfig::L1, 1)]
+    #[case([0.0, 0.0], [2.0, 2.0], 3.0, NormConfig::L1, 0)]
+    #[case([-2.0, -2.0], [0.0, 0.0], 5.0, NormConfig::L1, 1)]
+    #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2, 0)]
+    #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2, 1)]
+    #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2Squared, 0)]
+    #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2Squared, 1)]
+    #[case([0.0, 0.0], [2.0, 2.0], 1.0, NormConfig::Linf, 0)]
+    #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::Linf, 1)]
+    fn test_matrix_proximity_pairs(
+        #[case] point_1: [FloatType; 2],
+        #[case] point_2: [FloatType; 2],
+        #[case] eps: FloatType,
+        #[case] norm: NormConfig,
+        #[case] expected: IndexType,
+    ) {
+        let input = MatrixType::from_rows(&[
+            RowVector2::from_row_slice(&point_1),
+            RowVector2::from_row_slice(&point_2),
+        ]);
+
+        let expected =
+            OMatrix::<IndexType, Dyn, Dyn>::from_row_slice(2, 2, &[1, expected, expected, 1]);
+
+        let prox = MatrixProximity::new(&input, &ProximityConfig { eps, norm });
+
+        assert_eq!(prox.proximities, expected)
+    }
+
+    #[rstest]
+    #[case(0)]
+    #[case(1)]
+    #[case(10)]
+    fn test_marix_proximity_shape(#[case] n: usize) {
+        let prox = MatrixProximity::new(&MatrixType::<2>::zeros(n), &Default::default());
+        assert_eq!(prox.proximities.shape(), (n, n))
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_matrix_proximity_invalid_eps() {
+        let input = MatrixType::<2>::identity(2);
+
+        MatrixProximity::new(
+            &input,
+            &ProximityConfig {
+                eps: -1.0,
+                norm: NormConfig::L1,
+            },
         );
     }
 }

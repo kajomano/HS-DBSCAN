@@ -1,6 +1,6 @@
 ## High-level
-- [ ] Write dumb implementation
-- [ ] Write unit tests
+- [x] Write dumb implementation
+- [x] Write unit tests
 - [ ] Write benchmarks
 - [ ] Write python bindings
 - Extend with:
@@ -22,16 +22,19 @@
   - [x] But don't mess up the reusability of `Norm`!
 - [ ] Try to avoid the temp vector
   - [ ] Redo benchmark on target hardware
-- [ ] Handle weighted points
 
 - [x] Add query function to proximity
 - [x] Add unit tests for the proximity calcs
-- [ ] Add unit tests for the dbscan
+- [x] Add unit tests for the dbscan
 
 - [x] Pass the data generation as a function arg
 - [x] Add query benchmarks
 
-- [ ] Move things into `pub(crate)` wherever possible
+- [ ] Add DBSCAN benchmarks
+
+- [ ] Python bindings
+- [ ] Handle weighted points
+- [ ] Rasterization
 
 
 ## Issues

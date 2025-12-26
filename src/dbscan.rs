@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-
 use crate::{
     proximity::Proximity,
     types::{IndexType, MatrixType},
 };
+use std::collections::HashSet;
 
 pub struct Dbscan {
     min_pts: IndexType,
@@ -82,31 +81,70 @@ impl Dbscan {
 
 #[cfg(test)]
 mod tests {
-    use nalgebra::{OMatrix, RowVector2};
+    use crate::{
+        dbscan::Dbscan,
+        proximity::Proximity,
+        types::{IndexType, MatrixType},
+    };
+    use nalgebra::{Dyn, OVector, VectorView};
     use rstest::rstest;
-    use crate::types::{IndexType, FloatType, MatrixType};
+
+    struct TestProximity {
+        n_1: IndexType,
+        query_1: OVector<IndexType, Dyn>,
+        query_2: OVector<IndexType, Dyn>,
+    }
+
+    impl TestProximity {
+        pub fn new(n_1: usize, n_2: usize, in_proximity: bool) -> Self {
+            Self {
+                n_1: n_1 as IndexType,
+                query_1: OVector::<IndexType, Dyn>::from_fn(n_1 + n_2, |r, _| {
+                    if r < n_1 || in_proximity { 1 } else { 0 }
+                }),
+                query_2: OVector::<IndexType, Dyn>::from_fn(n_1 + n_2, |r, _| {
+                    if r >= n_1 || in_proximity { 1 } else { 0 }
+                }),
+            }
+        }
+    }
+
+    impl Proximity for TestProximity {
+        fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn> {
+            if query_idx < self.n_1 {
+                self.query_1.column(0)
+            } else {
+                self.query_2.column(0)
+            }
+        }
+    }
 
     #[rstest]
-    #[case([0.0, 0.0], 1, [0.0, 0.0], 1, 1, [0, 0])]
-    // #[case(L1Norm, [1.0, -2.0], 3.0)]
-    // #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
-    // #[case(L2SquaredNorm, [1.0, 2.0], 5.0)]
-    // #[case(LinfNorm, [1.0, 2.0], 2.0)]
-    // #[case(LinfNorm, [1.0, -2.0], 2.0)]
+    #[case(1, 1, false, 3, 0, 0)]
+    #[case(1, 1, true, 3, 0, 0)]
+    // #[case(5, 1, false, 3, 10, 0)]
+    // #[case(1, 5, false, 3, 0, 20)]
+    // #[case(5, 1, true, 3, 10, 10)]
+    // #[case(1, 5, true, 3, 10, 10)]
     fn test_dbscan(
-        #[case] points_1: [FloatType; 2],
         #[case] n_1: usize,
-        #[case] points_2: [FloatType; 2],
         #[case] n_2: usize,
+        #[case] in_proximity: bool,
         #[case] min_pts: IndexType,
-        #[case] expected_labels: [IndexType; 2]
+        #[case] expected_label_1: IndexType,
+        #[case] expected_label_2: IndexType,
     ) {
-        let mut rows = vec![RowVector2::from_row_slice(&points_1); n_1];
-        rows.append(&mut vec![RowVector2::from_row_slice(&points_1); n_2]);
+        let prox = TestProximity::new(n_1, n_2, in_proximity);
+        let input = MatrixType::<2>::zeros(n_1 + n_2);
+        let mut dbscan = Dbscan::new(&input, min_pts);
 
-        let input = MatrixType::from_rows(&rows);
+        dbscan.expand_cluster(&prox, 0, 10);
+        dbscan.expand_cluster(&prox, n_1 as IndexType, 20);
 
-        // TODO: ITT
-        todo!()
+        let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
+        expected.append(&mut vec![expected_label_2; n_2 as usize]);
+
+        assert_eq!(dbscan.clustered, vec![true; (n_1 + n_2) as usize]);
+        assert_eq!(dbscan.clusters, expected);
     }
 }

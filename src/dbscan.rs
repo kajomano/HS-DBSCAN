@@ -158,5 +158,8 @@ mod tests {
 
         assert_eq!(dbscan.assigned, vec![true; (n_1 + n_2) as usize]);
         assert_eq!(dbscan.clusters, expected);
+
+        // TODO: still fails on the commented cases
+        todo!()
     }
 }

@@ -36,9 +36,9 @@ impl Dbscan {
         let mut seeds: HashSet<IndexType> = prox_query
             .iter()
             .enumerate()
-            .filter_map(|(i, weight)| {
+            .filter_map(|(idx, weight)| {
                 if *weight > 0 {
-                    Some(i as IndexType)
+                    Some(idx as IndexType)
                 } else {
                     None
                 }
@@ -46,7 +46,7 @@ impl Dbscan {
             .collect();
 
         // Not a core point
-        if prox_query.sum() <= self.min_pts {
+        if prox_query.sum() < self.min_pts {
             self.set_cluster_ids(&seeds, 0);
             return false;
         }
@@ -60,18 +60,20 @@ impl Dbscan {
 
             let prox_query = prox.query(idx);
             if prox_query.sum() >= self.min_pts {
-                for idx in prox_query.iter() {
-                    unsafe {
-                        let assigned = self.assigned.get_unchecked_mut(*idx as usize);
-                        let cluster = self.clusters.get_unchecked_mut(*idx as usize);
+                for (idx, weight) in prox_query.iter().enumerate() {
+                    if *weight > 0 {
+                        unsafe {
+                            let assigned = self.assigned.get_unchecked_mut(idx);
+                            let cluster = self.clusters.get_unchecked_mut(idx);
 
-                        if *assigned == false || *cluster == 0 {
-                            if *assigned == false {
-                                seeds.insert(*idx);
+                            if *assigned == false || *cluster == 0 {
+                                if *assigned == false {
+                                    seeds.insert(idx as IndexType);
+                                }
+
+                                *assigned = true;
+                                *cluster = cluster_id;
                             }
-
-                            *assigned = true;
-                            *cluster = cluster_id;
                         }
                     }
                 }
@@ -135,9 +137,10 @@ mod tests {
     #[case(1, 1, false, 3, 0, 0)]
     #[case(1, 1, true, 3, 0, 0)]
     #[case(5, 1, false, 3, 10, 0)]
-    // #[case(1, 5, false, 3, 0, 20)]
-    // #[case(5, 1, true, 3, 10, 10)]
-    // #[case(1, 5, true, 3, 10, 10)]
+    #[case(1, 5, false, 3, 0, 20)]
+    #[case(5, 1, true, 3, 10, 10)]
+    #[case(1, 5, true, 3, 10, 10)]
+    #[case(5, 5, false, 3, 10, 20)]
     fn test_dbscan(
         #[case] n_1: usize,
         #[case] n_2: usize,
@@ -151,15 +154,14 @@ mod tests {
         let mut dbscan = Dbscan::new(&input, min_pts);
 
         dbscan.expand_cluster(&prox, 0, 10);
-        dbscan.expand_cluster(&prox, n_1 as IndexType, 20);
+        if !dbscan.assigned(n_1 as IndexType) {
+            dbscan.expand_cluster(&prox, n_1 as IndexType, 20);
+        }
 
         let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
         expected.append(&mut vec![expected_label_2; n_2 as usize]);
 
         assert_eq!(dbscan.assigned, vec![true; (n_1 + n_2) as usize]);
         assert_eq!(dbscan.clusters, expected);
-
-        // TODO: still fails on the commented cases
-        todo!()
     }
 }

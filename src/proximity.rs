@@ -87,7 +87,7 @@ impl Default for ProximityConfig {
 pub trait Proximity {
     /// Returns a vector of weights where a weight > 0 means the point is within proximity of the
     /// query point. The query point is referenced by index.
-    fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn>;
+    fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn>;
 }
 
 // TODO: KD-tree
@@ -175,8 +175,8 @@ impl MatrixProximity {
 }
 
 impl Proximity for MatrixProximity {
-    fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn> {
-        self.proximities.column(query_idx as usize)
+    fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
+        self.proximities.column(query_idx)
     }
 }
 

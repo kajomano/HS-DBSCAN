@@ -19,30 +19,35 @@ impl Dbscan {
         }
     }
 
-    pub fn assigned(&self, idx: IndexType) -> bool {
-        self.assigned[idx as usize]
+    // TODO: docstring
+    // TODO: return clustering
+    pub fn cluster<P: Proximity>(&mut self, prox: &P) {
+        let mut cluster_id: IndexType = 1;
+
+        // TODO: fix this
+        for (idx, assigned) in self.assigned.iter().enumerate() {
+            if !assigned {
+                if self.expand_cluster(prox, idx, cluster_id) {
+                    cluster_id += 1;
+                }
+            }
+        }
     }
 
     // TODO: docstring
-    pub fn expand_cluster<P: Proximity>(
+    fn expand_cluster<P: Proximity>(
         &mut self,
         prox: &P,
-        idx: IndexType,
+        idx: usize,
         cluster_id: IndexType,
     ) -> bool {
         assert!((idx as usize) < self.clusters.len());
 
         let prox_query = prox.query(idx);
-        let mut seeds: HashSet<IndexType> = prox_query
+        let mut seeds: HashSet<usize> = prox_query
             .iter()
             .enumerate()
-            .filter_map(|(idx, weight)| {
-                if *weight > 0 {
-                    Some(idx as IndexType)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(idx, weight)| if *weight > 0 { Some(idx) } else { None })
             .collect();
 
         // Not a core point
@@ -68,7 +73,7 @@ impl Dbscan {
 
                             if *assigned == false || *cluster == 0 {
                                 if *assigned == false {
-                                    seeds.insert(idx as IndexType);
+                                    seeds.insert(idx);
                                 }
 
                                 *assigned = true;
@@ -83,11 +88,11 @@ impl Dbscan {
         true
     }
 
-    fn set_cluster_ids(&mut self, idxs: &HashSet<IndexType>, cluster_id: IndexType) {
+    fn set_cluster_ids(&mut self, idxs: &HashSet<usize>, cluster_id: IndexType) {
         unsafe {
             for idx in idxs {
-                *self.assigned.get_unchecked_mut(*idx as usize) = true;
-                *self.clusters.get_unchecked_mut(*idx as usize) = cluster_id;
+                *self.assigned.get_unchecked_mut(*idx) = true;
+                *self.clusters.get_unchecked_mut(*idx) = cluster_id;
             }
         }
     }
@@ -104,7 +109,7 @@ mod tests {
     use rstest::rstest;
 
     struct TestProximity {
-        n_1: IndexType,
+        n_1: usize,
         query_1: OVector<IndexType, Dyn>,
         query_2: OVector<IndexType, Dyn>,
     }
@@ -112,7 +117,7 @@ mod tests {
     impl TestProximity {
         pub fn new(n_1: usize, n_2: usize, in_proximity: bool) -> Self {
             Self {
-                n_1: n_1 as IndexType,
+                n_1: n_1,
                 query_1: OVector::<IndexType, Dyn>::from_fn(n_1 + n_2, |r, _| {
                     if r < n_1 || in_proximity { 1 } else { 0 }
                 }),
@@ -124,7 +129,7 @@ mod tests {
     }
 
     impl Proximity for TestProximity {
-        fn query<'a>(&'a self, query_idx: IndexType) -> VectorView<'a, IndexType, Dyn> {
+        fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
             if query_idx < self.n_1 {
                 self.query_1.column(0)
             } else {
@@ -153,6 +158,8 @@ mod tests {
         let input = MatrixType::<2>::zeros(n_1 + n_2);
         let mut dbscan = Dbscan::new(&input, min_pts);
 
+        // TODO: update unit test
+        // dbscan.cluster(&prox);
         dbscan.expand_cluster(&prox, 0, 10);
         if !dbscan.assigned(n_1 as IndexType) {
             dbscan.expand_cluster(&prox, n_1 as IndexType, 20);

@@ -37,9 +37,12 @@ pub fn hs_dbscan<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &HsDbsca
     let mut dbscan = Dbscan::new(input, config.min_pts);
     let mut cluster_id: IndexType = 1;
 
+    // Run dbscan
     for idx in 0..(input.nrows() as IndexType) {
-        if dbscan.expand_cluster(&prox, idx, cluster_id) {
-            cluster_id += 1;
+        if !dbscan.assigned(idx) {
+            if dbscan.expand_cluster(&prox, idx, cluster_id) {
+                cluster_id += 1;
+            }
         }
     }
 }

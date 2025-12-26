@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 pub struct Dbscan {
     min_pts: IndexType,
-    clustered: Vec<bool>,
+    assigned: Vec<bool>,
     clusters: Vec<IndexType>,
 }
 
@@ -14,9 +14,13 @@ impl Dbscan {
     pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, min_pts: IndexType) -> Self {
         Self {
             min_pts,
-            clustered: vec![false; input.nrows()],
+            assigned: vec![false; input.nrows()],
             clusters: vec![0; input.nrows()],
         }
+    }
+
+    pub fn assigned(&self, idx: IndexType) -> bool {
+        self.assigned[idx as usize]
     }
 
     // TODO: docstring
@@ -26,15 +30,23 @@ impl Dbscan {
         idx: IndexType,
         cluster_id: IndexType,
     ) -> bool {
+        assert!((idx as usize) < self.clusters.len());
+
         let prox_query = prox.query(idx);
         let mut seeds: HashSet<IndexType> = prox_query
             .iter()
             .enumerate()
-            .filter_map(|(weight, i)| if weight > 0 { Some(*i) } else { None })
+            .filter_map(|(i, weight)| {
+                if *weight > 0 {
+                    Some(i as IndexType)
+                } else {
+                    None
+                }
+            })
             .collect();
 
         // Not a core point
-        if prox_query.sum() < self.min_pts {
+        if prox_query.sum() <= self.min_pts {
             self.set_cluster_ids(&seeds, 0);
             return false;
         }
@@ -50,15 +62,15 @@ impl Dbscan {
             if prox_query.sum() >= self.min_pts {
                 for idx in prox_query.iter() {
                     unsafe {
-                        let clustered = self.clustered.get_unchecked_mut(*idx as usize);
+                        let assigned = self.assigned.get_unchecked_mut(*idx as usize);
                         let cluster = self.clusters.get_unchecked_mut(*idx as usize);
 
-                        if *clustered == false || *cluster == 0 {
-                            if *clustered == false {
+                        if *assigned == false || *cluster == 0 {
+                            if *assigned == false {
                                 seeds.insert(*idx);
                             }
 
-                            *clustered = true;
+                            *assigned = true;
                             *cluster = cluster_id;
                         }
                     }
@@ -72,7 +84,7 @@ impl Dbscan {
     fn set_cluster_ids(&mut self, idxs: &HashSet<IndexType>, cluster_id: IndexType) {
         unsafe {
             for idx in idxs {
-                *self.clustered.get_unchecked_mut(*idx as usize) = true;
+                *self.assigned.get_unchecked_mut(*idx as usize) = true;
                 *self.clusters.get_unchecked_mut(*idx as usize) = cluster_id;
             }
         }
@@ -122,7 +134,7 @@ mod tests {
     #[rstest]
     #[case(1, 1, false, 3, 0, 0)]
     #[case(1, 1, true, 3, 0, 0)]
-    // #[case(5, 1, false, 3, 10, 0)]
+    #[case(5, 1, false, 3, 10, 0)]
     // #[case(1, 5, false, 3, 0, 20)]
     // #[case(5, 1, true, 3, 10, 10)]
     // #[case(1, 5, true, 3, 10, 10)]
@@ -144,7 +156,7 @@ mod tests {
         let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
         expected.append(&mut vec![expected_label_2; n_2 as usize]);
 
-        assert_eq!(dbscan.clustered, vec![true; (n_1 + n_2) as usize]);
+        assert_eq!(dbscan.assigned, vec![true; (n_1 + n_2) as usize]);
         assert_eq!(dbscan.clusters, expected);
     }
 }

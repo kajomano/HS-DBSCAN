@@ -31,6 +31,7 @@
 - [x] Pass the data generation as a function arg
 - [x] Add query benchmarks
 
+- [ ] Move things into `pub(crate)` wherever possible
 
 
 ## Issues

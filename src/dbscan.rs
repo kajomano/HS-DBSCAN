@@ -138,24 +138,23 @@ mod tests {
     }
 
     #[rstest]
-    #[case(1, 1, false, 3, 0, 0)]
-    #[case(1, 1, true, 3, 0, 0)]
-    #[case(5, 1, false, 3, 1, 0)]
-    #[case(1, 5, false, 3, 0, 1)]
-    #[case(5, 1, true, 3, 1, 1)]
-    #[case(1, 5, true, 3, 1, 1)]
-    #[case(5, 5, false, 3, 1, 2)]
+    #[case(1, 1, false, 0, 0)]
+    #[case(1, 1, true, 0, 0)]
+    #[case(5, 1, false, 1, 0)]
+    #[case(1, 5, false, 0, 1)]
+    #[case(5, 1, true, 1, 1)]
+    #[case(1, 5, true, 1, 1)]
+    #[case(5, 5, false, 1, 2)]
     fn test_dbscan(
         #[case] n_1: usize,
         #[case] n_2: usize,
         #[case] in_proximity: bool,
-        #[case] min_pts: IndexType,
         #[case] expected_label_1: IndexType,
         #[case] expected_label_2: IndexType,
     ) {
         let prox = TestProximity::new(n_1, n_2, in_proximity);
         let input = MatrixType::<2>::zeros(n_1 + n_2);
-        let mut dbscan = Dbscan::new(&input, min_pts);
+        let mut dbscan = Dbscan::new(&input, 3);
 
         dbscan.cluster(&prox);
 

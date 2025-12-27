@@ -19,21 +19,18 @@ fn benchmark_proximity_init(
     let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
     group.measurement_time(Duration::from_secs(20));
 
-    // TODO: move these to macros/functions
-    let input = generator.generate::<2>(100);
-    group.bench_function("100", |b| {
-        b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
-    });
+    macro_rules! proximity_init {
+        ($n:literal) => {
+            let input = generator.generate::<2>($n);
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
+            });
+        };
+    }
 
-    let input = generator.generate::<2>(1000);
-    group.bench_function("1000", |b| {
-        b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
-    });
-
-    let input = generator.generate::<2>(10000);
-    group.bench_function("10000", |b| {
-        b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
-    });
+    proximity_init!(100);
+    proximity_init!(1000);
+    proximity_init!(10000);
 
     group.finish();
 }
@@ -55,17 +52,18 @@ fn benchmark_proximity_query(
         }
     };
 
-    // TODO: move these to macros/functions
-    let proximity = MatrixProximity::new(&generator.generate::<2>(100), &proximity_config);
-    group.bench_function("100", |b| b.iter(|| black_box(inner_fn(&proximity, 100))));
+    macro_rules! proximity_query {
+        ($n:literal) => {
+            let proximity = MatrixProximity::new(&generator.generate::<2>($n), &proximity_config);
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(inner_fn(&proximity, $n)))
+            });
+        };
+    }
 
-    let proximity = MatrixProximity::new(&generator.generate::<2>(1000), &proximity_config);
-    group.bench_function("1000", |b| b.iter(|| black_box(inner_fn(&proximity, 1000))));
-
-    let proximity = MatrixProximity::new(&generator.generate::<2>(10000), &proximity_config);
-    group.bench_function("10000", |b| {
-        b.iter(|| black_box(inner_fn(&proximity, 10000)))
-    });
+    proximity_query!(100);
+    proximity_query!(1000);
+    proximity_query!(10000);
 
     group.finish();
 }

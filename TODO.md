@@ -31,7 +31,7 @@
 - [x] Pass the data generation as a function arg
 - [x] Add query benchmarks
 
-- [ ] Fix mut borrow and update dbscan unit test
+- [x] Fix mut borrow and update dbscan unit test
 
 - [ ] Add DBSCAN benchmarks
     - [ ] Check speedup w/o unsafe

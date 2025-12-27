@@ -19,9 +19,10 @@
 - [x] Lower FP precision
 
 - [x] Immediately calculate if distance is below eps and store that in proximity
-  - [x] But don't mess up the reusability of `Norm`!
-- [ ] Try to avoid the temp vector
-  - [ ] Redo benchmark on target hardware
+    - [x] But don't mess up the reusability of `Norm`!
+- [x] Try to avoid the temp vector
+    - [x] Redo benchmark on target hardware
+    - avoiding the temp speeds up very small batches (~100) by 30%, but gives a 15% slowdown on larger batches
 
 - [x] Add query function to proximity
 - [x] Add unit tests for the proximity calcs
@@ -33,7 +34,8 @@
 - [ ] Fix mut borrow and update dbscan unit test
 
 - [ ] Add DBSCAN benchmarks
-  - [ ] Check speedup w/o unsafe
+    - [ ] Check speedup w/o unsafe
+- [ ] Move repeated benchamrk internals to macros/functions
 
 - [ ] Python bindings
 - [ ] Handle weighted points
@@ -42,7 +44,7 @@
 
 ## Issues
 - Norm variants don't change the performance
-  - not sure what it was, now they change significantly
+    - not sure what it was, now they change significantly
 
 
 ## Housekeeping

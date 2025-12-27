@@ -33,6 +33,7 @@
 - [ ] Fix mut borrow and update dbscan unit test
 
 - [ ] Add DBSCAN benchmarks
+  - [ ] Check speedup w/o unsafe
 
 - [ ] Python bindings
 - [ ] Handle weighted points

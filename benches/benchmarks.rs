@@ -8,7 +8,6 @@ use hs_dbscan::{
     HsDbscanConfig,
     generate::{Generate, Uniform},
     proximity::{MatrixProximity, Proximity, ProximityConfig},
-    types::IndexType,
 };
 use std::{hint::black_box, time::Duration};
 
@@ -44,7 +43,7 @@ fn benchmark_proximity_query(
     ));
     group.measurement_time(Duration::from_secs(5));
 
-    let inner_fn = |proximity: &MatrixProximity, n: IndexType| {
+    let inner_fn = |proximity: &MatrixProximity, n: usize| {
         for idx in 0..n {
             proximity.query(idx);
         }

@@ -24,9 +24,8 @@ impl Dbscan {
     pub fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
-        // TODO: fix this
-        for (idx, assigned) in self.assigned.iter().enumerate() {
-            if !assigned {
+        for idx in 0..self.assigned.len() {
+            if !self.assigned[idx] {
                 if self.expand_cluster(prox, idx, cluster_id) {
                     cluster_id += 1;
                 }
@@ -141,11 +140,11 @@ mod tests {
     #[rstest]
     #[case(1, 1, false, 3, 0, 0)]
     #[case(1, 1, true, 3, 0, 0)]
-    #[case(5, 1, false, 3, 10, 0)]
-    #[case(1, 5, false, 3, 0, 20)]
-    #[case(5, 1, true, 3, 10, 10)]
-    #[case(1, 5, true, 3, 10, 10)]
-    #[case(5, 5, false, 3, 10, 20)]
+    #[case(5, 1, false, 3, 1, 0)]
+    #[case(1, 5, false, 3, 0, 1)]
+    #[case(5, 1, true, 3, 1, 1)]
+    #[case(1, 5, true, 3, 1, 1)]
+    #[case(5, 5, false, 3, 1, 2)]
     fn test_dbscan(
         #[case] n_1: usize,
         #[case] n_2: usize,
@@ -158,12 +157,7 @@ mod tests {
         let input = MatrixType::<2>::zeros(n_1 + n_2);
         let mut dbscan = Dbscan::new(&input, min_pts);
 
-        // TODO: update unit test
-        // dbscan.cluster(&prox);
-        dbscan.expand_cluster(&prox, 0, 10);
-        if !dbscan.assigned(n_1 as IndexType) {
-            dbscan.expand_cluster(&prox, n_1 as IndexType, 20);
-        }
+        dbscan.cluster(&prox);
 
         let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
         expected.append(&mut vec![expected_label_2; n_2 as usize]);

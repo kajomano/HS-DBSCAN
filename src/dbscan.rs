@@ -40,7 +40,7 @@ impl Dbscan {
         idx: usize,
         cluster_id: IndexType,
     ) -> bool {
-        assert!((idx as usize) < self.clusters.len());
+        assert!(idx < self.clusters.len());
 
         let prox_query = prox.query(idx);
         let mut seeds: HashSet<usize> = prox_query
@@ -60,28 +60,31 @@ impl Dbscan {
         seeds.remove(&idx);
 
         while let Some(idx) = seeds.iter().next().cloned() {
-            seeds.remove(&idx);
-
             let prox_query = prox.query(idx);
             if prox_query.sum() >= self.min_pts {
-                for (idx, weight) in prox_query.iter().enumerate() {
-                    if *weight > 0 {
-                        unsafe {
-                            let assigned = self.assigned.get_unchecked_mut(idx);
-                            let cluster = self.clusters.get_unchecked_mut(idx);
+                for idx in prox_query
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, weight)| if *weight > 0 { Some(idx) } else { None })
+                {
+                    // TODO: try without unsafe
+                    unsafe {
+                        let assigned = self.assigned.get_unchecked_mut(idx);
+                        let cluster = self.clusters.get_unchecked_mut(idx);
 
-                            if *assigned == false || *cluster == 0 {
-                                if *assigned == false {
-                                    seeds.insert(idx);
-                                }
-
-                                *assigned = true;
-                                *cluster = cluster_id;
-                            }
+                        if *assigned == false {
+                            seeds.insert(idx);
+                            *assigned = true;
+                            *cluster = cluster_id;
+                        } else if *cluster == 0 {
+                            *assigned = true;
+                            *cluster = cluster_id;
                         }
                     }
                 }
             }
+
+            seeds.remove(&idx);
         }
 
         true

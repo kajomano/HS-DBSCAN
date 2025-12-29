@@ -36,6 +36,8 @@
 - [ ] Add DBSCAN benchmarks
   - [ ] Add more data distributions
   - [ ] Check speedup w/o unsafe
+  - [ ] Try to tune
+    - [ ] w/o unsafe
 - [x] Move repeated benchamrk internals to macros/functions
 
 - [ ] Python bindings

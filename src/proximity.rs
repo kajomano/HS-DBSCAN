@@ -91,6 +91,7 @@ pub trait Proximity {
 }
 
 // TODO: KD-tree
+
 /// RAII struct for handling proximity by precalculating every distance between point pairs.
 pub struct MatrixProximity {
     proximities: OMatrix<IndexType, Dyn, Dyn>,

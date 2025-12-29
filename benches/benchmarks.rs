@@ -6,8 +6,10 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
     HsDbscanConfig,
+    dbscan::Dbscan,
     generate::{Generate, UniformBox},
     proximity::{MatrixProximity, Proximity, ProximityConfig},
+    types::MatrixType,
 };
 use std::{hint::black_box, time::Duration};
 
@@ -46,17 +48,17 @@ fn benchmark_proximity_query(
     ));
     group.measurement_time(Duration::from_secs(5));
 
-    let inner_fn = |proximity: &MatrixProximity, n: usize| {
+    let inner_fn = |prox: &MatrixProximity, n: usize| {
         for idx in 0..n {
-            proximity.query(idx);
+            prox.query(idx);
         }
     };
 
     macro_rules! proximity_query {
         ($n:literal) => {
-            let proximity = MatrixProximity::new(&generator.generate($n), &proximity_config);
+            let prox = MatrixProximity::new(&generator.generate($n), &proximity_config);
             group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(inner_fn(&proximity, $n)))
+                b.iter(|| black_box(inner_fn(&prox, $n)))
             });
         };
     }
@@ -68,14 +70,63 @@ fn benchmark_proximity_query(
     group.finish();
 }
 
+fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &mut Criterion) {
+    let mut group = c.benchmark_group(format!("dbscan_{}_{}", config.proximity.norm, generator));
+    group.measurement_time(Duration::from_secs(10));
+
+    let inner_fn = |input: &MatrixType<2>, prox: &MatrixProximity| {
+        let mut dbscan = Dbscan::new(input, config.min_pts);
+        dbscan.cluster(prox);
+    };
+
+    macro_rules! dbscan {
+        ($n:literal) => {
+            let input = generator.generate($n);
+            let prox = MatrixProximity::new(&input, &config.proximity);
+
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(inner_fn(&input, &prox)))
+            });
+        };
+    }
+
+    dbscan!(100);
+    dbscan!(1000);
+    dbscan!(10000);
+
+    group.finish();
+}
+
 fn benchmark_proximity(c: &mut Criterion) {
     let config = HsDbscanConfig::default();
-    let generator = UniformBox {
-        center: [5.0, 5.0],
-        size: 5.0,
-    };
-    benchmark_proximity_init(&config.proximity, &generator, c);
-    benchmark_proximity_query(&config.proximity, &generator, c);
+
+    // // Proximity
+    // benchmark_proximity_init(
+    //     &config.proximity,
+    //     &UniformBox {
+    //         center: [5.0, 5.0],
+    //         size: 5.0,
+    //     },
+    //     c,
+    // );
+    // benchmark_proximity_query(
+    //     &config.proximity,
+    //     &UniformBox {
+    //         center: [5.0, 5.0],
+    //         size: 5.0,
+    //     },
+    //     c,
+    // );
+
+    // DBSCAN
+    benchmark_dbscan(
+        &config,
+        &UniformBox {
+            center: [5.0, 5.0],
+            size: 5.0,
+        },
+        c,
+    );
 }
 
 criterion_group!(benches, benchmark_proximity);
@@ -94,3 +145,7 @@ criterion_main!(benches);
 // prox_init_L2_uniform/1000  time:   [1.2793 ms 1.2804 ms 1.2816 ms]
 // prox_init_L1_uniform/100   time:   [8.7750 µs 8.7929 µs 8.8117 µs]
 // prox_init_L1_uniform/1000  time:   [941.61 µs 942.97 µs 944.43 µs]
+
+// dbscan_L2_uniformbox/100   time:   [22.404 µs 22.435 µs 22.470 µs]
+// dbscan_L2_uniformbox/1000  time:   [3.2348 ms 3.2366 ms 3.2385 ms]
+// dbscan_L2_uniformbox/10000 time:   [357.79 ms 358.00 ms 358.21 ms]

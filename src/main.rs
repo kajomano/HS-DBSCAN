@@ -7,13 +7,17 @@
 
 use hs_dbscan::{
     HsDbscanConfig,
-    generate::{Generate, Uniform},
+    generate::{Generate, UniformBox},
     hs_dbscan,
 };
 
 fn main() {
     let config = HsDbscanConfig::default();
-    let input = Uniform { extent: 10.0 }.generate::<2>(5);
+    let input = UniformBox {
+        center: [5.0, 5.0],
+        size: 5.0,
+    }
+    .generate(5);
 
     hs_dbscan(&input, &config);
 }

@@ -6,22 +6,22 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
     HsDbscanConfig,
-    generate::{Generate, Uniform},
+    generate::{Generate, UniformBox},
     proximity::{MatrixProximity, Proximity, ProximityConfig},
 };
 use std::{hint::black_box, time::Duration};
 
 fn benchmark_proximity_init(
     proximity_config: &ProximityConfig,
-    generator: &impl Generate,
+    generator: &impl Generate<2>,
     c: &mut Criterion,
 ) {
     let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
-    group.measurement_time(Duration::from_secs(20));
+    group.measurement_time(Duration::from_secs(10));
 
     macro_rules! proximity_init {
         ($n:literal) => {
-            let input = generator.generate::<2>($n);
+            let input = generator.generate($n);
             group.bench_function(format!("{}", $n), |b| {
                 b.iter(|| black_box(MatrixProximity::new(&input, &proximity_config)))
             });
@@ -37,7 +37,7 @@ fn benchmark_proximity_init(
 
 fn benchmark_proximity_query(
     proximity_config: &ProximityConfig,
-    generator: &impl Generate,
+    generator: &impl Generate<2>,
     c: &mut Criterion,
 ) {
     let mut group = c.benchmark_group(format!(
@@ -54,7 +54,7 @@ fn benchmark_proximity_query(
 
     macro_rules! proximity_query {
         ($n:literal) => {
-            let proximity = MatrixProximity::new(&generator.generate::<2>($n), &proximity_config);
+            let proximity = MatrixProximity::new(&generator.generate($n), &proximity_config);
             group.bench_function(format!("{}", $n), |b| {
                 b.iter(|| black_box(inner_fn(&proximity, $n)))
             });
@@ -70,7 +70,10 @@ fn benchmark_proximity_query(
 
 fn benchmark_proximity(c: &mut Criterion) {
     let config = HsDbscanConfig::default();
-    let generator = Uniform { extent: 10.0 };
+    let generator = UniformBox {
+        center: [5.0, 5.0],
+        size: 5.0,
+    };
     benchmark_proximity_init(&config.proximity, &generator, c);
     benchmark_proximity_query(&config.proximity, &generator, c);
 }

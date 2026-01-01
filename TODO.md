@@ -35,10 +35,13 @@
 
 - [ ] Add DBSCAN benchmarks
   - [ ] Add more data distributions
-  - [ ] Check speedup w/o unsafe
   - [ ] Try to tune
-    - [ ] w/o unsafe
-- [x] Move repeated benchamrk internals to macros/functions
+    - Bool seed lookup is better than `Hashset`
+    - AoS is better than SoA for dbscan internal state
+    - [x] w/o unsafe
+      - Unsafe is a 10~20% speedup
+    - Storing the idx in the state struct is a 6~13% speedup
+- [x] Move repeated benchmark internals to macros/functions
 
 - [ ] Python bindings
 - [ ] Handle weighted points

@@ -20,7 +20,7 @@ struct PointState {
 }
 
 impl Dbscan {
-    fn new(n: IndexType, min_pts: IndexType) -> Self {
+    fn new(n: usize, min_pts: IndexType) -> Self {
         Self {
             min_pts,
             states: (0..n)
@@ -38,7 +38,7 @@ impl Dbscan {
     fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
-        for idx in 0..(prox.len() as usize) {
+        for idx in 0..prox.len() {
             if !self.states[idx].assigned {
                 if self.expand_cluster(prox, idx, cluster_id) {
                     cluster_id += 1;
@@ -74,17 +74,22 @@ impl Dbscan {
         while let Some(idx) = self
             .states
             .iter()
-            .filter_map(|state| if state.seed { Some(state.idx) } else { None })
+            .filter_map(|state| {
+                if state.seed {
+                    Some(state.idx as usize)
+                } else {
+                    None
+                }
+            })
             .next()
         {
-            let prox_query = prox.query(idx as usize);
+            let prox_query = prox.query(idx);
             if prox_query.sum() >= self.min_pts {
                 for idx in prox_query
                     .iter()
                     .enumerate()
                     .filter_map(|(idx, &weight)| if weight > 0 { Some(idx) } else { None })
                 {
-                    // TODO: try without unsafe
                     unsafe {
                         let state = self.states.get_unchecked_mut(idx);
 
@@ -100,7 +105,7 @@ impl Dbscan {
             }
 
             unsafe {
-                self.states.get_unchecked_mut(idx as usize).seed = false;
+                self.states.get_unchecked_mut(idx).seed = false;
             }
         }
 
@@ -159,8 +164,8 @@ mod tests {
             }
         }
 
-        fn len(&self) -> IndexType {
-            (self.n_1 + self.n_2) as IndexType
+        fn len(&self) -> usize {
+            self.n_1 + self.n_2
         }
     }
 
@@ -185,12 +190,12 @@ mod tests {
         dbscan.cluster(&prox);
 
         let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
-        expected.append(&mut vec![expected_label_2; n_2 as usize]);
+        expected.append(&mut vec![expected_label_2; n_2]);
 
         let assigned: Vec<bool> = dbscan.states.iter().map(|state| state.assigned).collect();
         let clusters: Vec<IndexType> = dbscan.clusters();
 
-        assert_eq!(assigned, vec![true; (n_1 + n_2) as usize]);
+        assert_eq!(assigned, vec![true; n_1 + n_2]);
         assert_eq!(clusters, expected);
     }
 }

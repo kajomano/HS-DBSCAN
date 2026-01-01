@@ -1,3 +1,5 @@
+use nalgebra::{Dyn, OVector};
+
 use crate::{
     dbscan::dbscan,
     proximity::{MatrixProximity, ProximityConfig},
@@ -29,8 +31,11 @@ impl Default for HsDbscanConfig {
 // TODO: docstring
 // TODO: return
 pub fn hs_dbscan<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &HsDbscanConfig) {
+    // Create mock weights
+    let weights = OVector::<IndexType, Dyn>::repeat(input.nrows(), 1);
+
     // Create a proximity calculator
-    let prox = MatrixProximity::new(input, &config.proximity);
+    let prox = MatrixProximity::new(input, &weights, &config.proximity);
 
     // Run dbscan
     dbscan(&prox, config.min_pts);

@@ -1,5 +1,7 @@
 use crate::types::{FloatType, IndexType, MatrixType};
-use nalgebra::{Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, VectorView};
+use nalgebra::{
+    Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, Vector, VectorView,
+};
 use std::ops::SubAssign;
 use strum_macros::Display;
 
@@ -101,17 +103,22 @@ pub struct MatrixProximity {
 }
 
 impl MatrixProximity {
-    pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
+    pub fn new<const NCOLS: usize, S: Storage<IndexType, Dyn>>(
+        input: &MatrixType<NCOLS>,
+        weights: &Vector<IndexType, Dyn, S>,
+        config: &ProximityConfig,
+    ) -> Self {
         assert!(input.nrows() <= IndexType::MAX as usize);
+        assert!(input.nrows() == weights.nrows());
         assert!(config.eps >= 0.0);
 
         let proximities = match config.norm {
-            NormConfig::L1 => Self::pairwise_proximities(input, L1Norm, config.eps),
-            NormConfig::L2 => Self::pairwise_proximities(input, L2Norm, config.eps),
+            NormConfig::L1 => Self::pairwise_proximities(input, weights, L1Norm, config.eps),
+            NormConfig::L2 => Self::pairwise_proximities(input, weights, L2Norm, config.eps),
             NormConfig::L2Squared => {
-                Self::pairwise_proximities(input, L2SquaredNorm, config.eps * config.eps)
+                Self::pairwise_proximities(input, weights, L2SquaredNorm, config.eps * config.eps)
             }
-            NormConfig::Linf => Self::pairwise_proximities(input, LinfNorm, config.eps),
+            NormConfig::Linf => Self::pairwise_proximities(input, weights, LinfNorm, config.eps),
         };
 
         Self { proximities }
@@ -119,8 +126,9 @@ impl MatrixProximity {
 
     /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
     /// means outside of the proximity, and anything larger than 0 means inside the proximity.
-    fn pairwise_proximities<const NCOLS: usize, N: Norm>(
+    fn pairwise_proximities<const NCOLS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
         input: &MatrixType<NCOLS>,
+        weights: &Vector<IndexType, Dyn, S>,
         norm: N,
         eps: FloatType,
     ) -> OMatrix<IndexType, Dyn, Dyn> {
@@ -130,40 +138,43 @@ impl MatrixProximity {
         let n = input.nrows();
 
         // Calculate pairwise proximities. Only calculates the lower diagonal!
-        proximities
+        for (mut proximities_col, (i, anchor)) in proximities
             .column_iter_mut()
             .zip(input.row_iter().enumerate())
-            .for_each(|(mut proximities_col, (i, anchor))| {
-                // View for only working on the lower triangle
-                let input_view = input.rows(i, n - i);
-                let mut buffer_view = buffer.rows_mut(0, n - i);
-                let mut proximities_col_view = proximities_col.rows_mut(i, n - i);
+        {
+            // View for only working on the lower triangle
+            let input_view = input.rows(i, n - i);
+            let mut buffer_view = buffer.rows_mut(i, n - i);
+            let mut proximities_col_view = proximities_col.rows_mut(i, n - i);
 
-                // buffer = anchor.rep()
-                for mut row in buffer_view.row_iter_mut() {
-                    row.copy_from(&anchor)
-                }
+            // buffer = anchor.repeat()
+            for mut row in buffer_view.row_iter_mut() {
+                row.copy_from(&anchor)
+            }
 
-                // buffer = buffer - input
-                buffer_view.sub_assign(input_view);
+            // buffer = buffer - input
+            buffer_view.sub_assign(input_view);
 
-                // TODO: handle weights
+            // Calculate norm, threshold proximity
+            // NOTE: even though this temp can be avoided, somehow this is faster
+            let temp_proximities = OVector::<IndexType, Dyn>::from_iterator(
+                buffer_view.nrows(),
+                buffer_view
+                    .row_iter()
+                    .map(|row| if norm.apply(&row) <= eps { 1 } else { 0 }),
+            );
 
-                // Calculate norm, threshold proximity
-                // NOTE: even though this temp can be avoided, somehow this is faster
-                let temp_proximities = OVector::<IndexType, Dyn>::from_iterator(
-                    buffer_view.nrows(),
-                    buffer_view
-                        .row_iter()
-                        .map(|row| if norm.apply(&row) <= eps { 1 } else { 0 }),
-                );
+            // Store in proximities cole
+            proximities_col_view.copy_from(&temp_proximities);
+        }
 
-                // Store in proximities cole
-                proximities_col_view.copy_from(&temp_proximities);
-            });
-
-        // Fill the upper triangle too for ease of later access.
+        // Fill the upper triangle too
         proximities.fill_upper_triangle_with_lower_triangle();
+
+        // Set weights
+        for mut proximities_col in proximities.column_iter_mut() {
+            proximities_col.component_mul_assign(&weights)
+        }
 
         proximities
     }
@@ -189,7 +200,7 @@ mod tests {
         types::{FloatType, IndexType, MatrixType},
     };
     use approx::assert_relative_eq;
-    use nalgebra::{Dyn, OMatrix, RowVector2};
+    use nalgebra::{Dyn, OMatrix, OVector, RowVector2};
     use rstest::rstest;
 
     fn f(num: FloatType) -> FloatType {
@@ -233,15 +244,43 @@ mod tests {
         #[case] norm: NormConfig,
         #[case] expected: IndexType,
     ) {
-        let input = MatrixType::from_rows(&[
-            RowVector2::from_row_slice(&point_1),
-            RowVector2::from_row_slice(&point_2),
-        ]);
+        let prox = MatrixProximity::new(
+            &MatrixType::from_rows(&[
+                RowVector2::from_row_slice(&point_1),
+                RowVector2::from_row_slice(&point_2),
+            ]),
+            &OVector::<IndexType, Dyn>::repeat(2, 1),
+            &ProximityConfig { eps, norm },
+        );
 
         let expected =
-            OMatrix::<IndexType, Dyn, Dyn>::from_row_slice(2, 2, &[1, expected, expected, 1]);
+            OMatrix::<IndexType, Dyn, Dyn>::from_column_slice(2, 2, &[1, expected, expected, 1]);
 
-        let prox = MatrixProximity::new(&input, &ProximityConfig { eps, norm });
+        assert_eq!(prox.proximities, expected)
+    }
+
+    #[rstest]
+    #[case([0.0, 0.0], 1, [0.0, 0.0], 1, [1, 1, 1, 1])]
+    #[case([0.0, 0.0], 0, [0.0, 0.0], 1, [0, 1, 0, 1])]
+    #[case([0.0, 0.0], 0, [0.0, 0.0], 10, [0, 10, 0, 10])]
+    #[case([0.0, 0.0], 1000, [10.0, 0.0], 10, [1000, 0, 0, 10])]
+    fn test_matrix_proximity_weights(
+        #[case] point_1: [FloatType; 2],
+        #[case] weight_1: IndexType,
+        #[case] point_2: [FloatType; 2],
+        #[case] weight_2: IndexType,
+        #[case] expected: [IndexType; 4],
+    ) {
+        let prox = MatrixProximity::new(
+            &MatrixType::from_rows(&[
+                RowVector2::from_row_slice(&point_1),
+                RowVector2::from_row_slice(&point_2),
+            ]),
+            &OVector::<IndexType, Dyn>::from_column_slice(&[weight_1, weight_2]),
+            &ProximityConfig::default(),
+        );
+
+        let expected = OMatrix::<IndexType, Dyn, Dyn>::from_column_slice(2, 2, &expected);
 
         assert_eq!(prox.proximities, expected)
     }
@@ -251,17 +290,31 @@ mod tests {
     #[case(1)]
     #[case(10)]
     fn test_marix_proximity_shape(#[case] n: usize) {
-        let prox = MatrixProximity::new(&MatrixType::<2>::zeros(n), &Default::default());
+        let prox = MatrixProximity::new(
+            &MatrixType::<2>::zeros(n),
+            &OVector::<IndexType, Dyn>::repeat(n, 1),
+            &Default::default(),
+        );
+
         assert_eq!(prox.proximities.shape(), (n, n))
     }
 
     #[test]
     #[should_panic]
-    fn test_matrix_proximity_invalid_eps() {
-        let input = MatrixType::<2>::identity(2);
-
+    fn test_matrix_proximity_invalid_input_rows() {
         MatrixProximity::new(
-            &input,
+            &MatrixType::<2>::identity(2),
+            &OVector::<IndexType, Dyn>::repeat(3, 1),
+            &ProximityConfig::default(),
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_matrix_proximity_invalid_eps() {
+        MatrixProximity::new(
+            &MatrixType::<2>::identity(2),
+            &OVector::<IndexType, Dyn>::repeat(2, 1),
             &ProximityConfig {
                 eps: -1.0,
                 norm: NormConfig::L1,

@@ -35,7 +35,7 @@
 
 - [ ] Add DBSCAN benchmarks
   - [ ] Add more data distributions
-  - [ ] Try to tune
+  - [x] Try to tune
     - Bool seed lookup is better than `Hashset`
     - AoS is better than SoA for dbscan internal state
     - [x] w/o unsafe
@@ -43,10 +43,15 @@
     - Storing the idx in the state struct is a 6~13% speedup
 - [x] Move repeated benchmark internals to macros/functions
 
-- [ ] Python bindings
+- [ ] Move `Default` from the config structs into another trait
+
 - [ ] Handle weighted points
+  - [ ] Add unit test
 - [ ] Rasterization
 
+- [ ] Python bindings
+
+- [ ] Clippy
 
 ## Issues
 - Norm variants don't change the performance

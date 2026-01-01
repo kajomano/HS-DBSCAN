@@ -73,6 +73,8 @@ impl Dbscan {
             self.states.get_unchecked_mut(idx).seed = false;
         }
 
+        // Iterate over seeds, and add anythinig within their vicinity to the cluster. If the seed is a core point too,
+        // add points reachable from it to seeds.
         while let Some(idx) = self
             .states
             .iter()

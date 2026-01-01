@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter, Result};
 
 pub trait Generate<const NCOLS: usize>: Display {
     // TODO: docstring
-    fn generate(&self, n: usize) -> MatrixType<NCOLS>;
+    fn generate(&self, n_pts: usize) -> MatrixType<NCOLS>;
 }
 
 pub struct UniformBox<const NCOLS: usize> {
@@ -14,9 +14,9 @@ pub struct UniformBox<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Generate<NCOLS> for UniformBox<NCOLS> {
-    fn generate(&self, n: usize) -> MatrixType<NCOLS> {
+    fn generate(&self, n_pts: usize) -> MatrixType<NCOLS> {
         let mut rng = rng();
-        MatrixType::<NCOLS>::from_fn(n, |_, col| {
+        MatrixType::<NCOLS>::from_fn(n_pts, |_, col| {
             rng.random_range(
                 (self.center[col] - (self.size / 2.0))..(self.center[col] + (self.size / 2.0)),
             )
@@ -36,10 +36,10 @@ pub struct UniformSphere<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Generate<NCOLS> for UniformSphere<NCOLS> {
-    fn generate(&self, n: usize) -> MatrixType<NCOLS> {
+    fn generate(&self, n_pts: usize) -> MatrixType<NCOLS> {
         let mut rng = rng();
         let normal_dist = Normal::new(0.0, 1.0).unwrap();
-        let mut points = MatrixType::<NCOLS>::from_fn(n, |_, _| normal_dist.sample(&mut rng));
+        let mut points = MatrixType::<NCOLS>::from_fn(n_pts, |_, _| normal_dist.sample(&mut rng));
 
         points.row_iter_mut().for_each(|mut row| {
             let u: FloatType = rng.random_range(0.0..1.0);

@@ -2,7 +2,7 @@ use crate::{proximity::Proximity, types::IndexType};
 
 // TODO: docstring
 pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> Vec<IndexType> {
-    let mut dbscan = Dbscan::new(prox.len(), min_pts);
+    let mut dbscan = Dbscan::new(prox, min_pts);
     dbscan.cluster(prox);
     dbscan.clusters()
 }
@@ -20,10 +20,10 @@ struct PointState {
 }
 
 impl Dbscan {
-    fn new(n: usize, min_pts: IndexType) -> Self {
+    fn new<P: Proximity>(prox: &P, min_pts: IndexType) -> Self {
         Self {
             min_pts,
-            states: (0..n)
+            states: (0..prox.len())
                 .map(|idx| PointState {
                     idx: idx as IndexType,
                     assigned: false,
@@ -38,17 +38,19 @@ impl Dbscan {
     fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
-        for idx in 0..prox.len() {
-            if !self.states[idx].assigned {
-                if self.expand_cluster(prox, idx, cluster_id) {
-                    cluster_id += 1;
+        for idx in 0..self.states.len() {
+            unsafe {
+                if !self.states.get_unchecked(idx).assigned {
+                    if self.expand_cluster(prox, idx, cluster_id) {
+                        cluster_id += 1;
+                    }
                 }
             }
         }
     }
 
     // TODO: docstring
-    fn expand_cluster<P: Proximity>(
+    unsafe fn expand_cluster<P: Proximity>(
         &mut self,
         prox: &P,
         idx: usize,
@@ -185,7 +187,7 @@ mod tests {
         #[case] expected_label_2: IndexType,
     ) {
         let prox = TestProximity::new(n_1, n_2, in_proximity);
-        let mut dbscan = Dbscan::new(prox.len(), 3);
+        let mut dbscan = Dbscan::new(&prox, 3);
 
         dbscan.cluster(&prox);
 

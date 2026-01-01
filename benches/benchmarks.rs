@@ -139,6 +139,6 @@ criterion_main!(benches);
 // prox_init_L1_uniform/100   time:   [8.7750 µs 8.7929 µs 8.8117 µs]
 // prox_init_L1_uniform/1000  time:   [941.61 µs 942.97 µs 944.43 µs]
 
-// dbscan_L2_uniformbox/100   time:   [22.404 µs 22.435 µs 22.470 µs]
-// dbscan_L2_uniformbox/1000  time:   [3.2348 ms 3.2366 ms 3.2385 ms]
-// dbscan_L2_uniformbox/10000 time:   [357.79 ms 358.00 ms 358.21 ms]
+// dbscan_L2_uniformbox/100   time:   [17.865 µs 17.935 µs 18.016 µs]
+// dbscan_L2_uniformbox/1000  time:   [2.5178 ms 2.5211 ms 2.5243 ms]
+// dbscan_L2_uniformbox/10000 time:   [295.96 ms 296.23 ms 296.51 ms]

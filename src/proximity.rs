@@ -90,7 +90,7 @@ pub trait Proximity {
     fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn>;
 
     /// Returns the number of points stored.
-    fn len(&self) -> usize;
+    fn len(&self) -> IndexType;
 }
 
 // TODO: KD-tree
@@ -102,6 +102,7 @@ pub struct MatrixProximity {
 
 impl MatrixProximity {
     pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &ProximityConfig) -> Self {
+        assert!(input.nrows() <= IndexType::MAX as usize);
         assert!(config.eps >= 0.0);
 
         let proximities = match config.norm {
@@ -173,8 +174,8 @@ impl Proximity for MatrixProximity {
         self.proximities.column(query_idx)
     }
 
-    fn len(&self) -> usize {
-        self.proximities.nrows()
+    fn len(&self) -> IndexType {
+        self.proximities.nrows() as IndexType
     }
 }
 

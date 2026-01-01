@@ -1,25 +1,36 @@
 use crate::{proximity::Proximity, types::IndexType};
-use std::collections::HashSet;
 
 // TODO: docstring
 pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> Vec<IndexType> {
     let mut dbscan = Dbscan::new(prox.len(), min_pts);
     dbscan.cluster(prox);
-    dbscan.clusters
+    dbscan.clusters()
 }
 
 struct Dbscan {
     min_pts: IndexType,
-    assigned: Vec<bool>,
-    clusters: Vec<IndexType>,
+    states: Vec<PointState>,
+}
+
+struct PointState {
+    idx: IndexType,
+    assigned: bool,
+    cluster: IndexType,
+    seed: bool,
 }
 
 impl Dbscan {
-    fn new(n: usize, min_pts: IndexType) -> Self {
+    fn new(n: IndexType, min_pts: IndexType) -> Self {
         Self {
             min_pts,
-            assigned: vec![false; n],
-            clusters: vec![0; n],
+            states: (0..n)
+                .map(|idx| PointState {
+                    idx: idx as IndexType,
+                    assigned: false,
+                    cluster: 0,
+                    seed: false,
+                })
+                .collect(),
         }
     }
 
@@ -27,8 +38,8 @@ impl Dbscan {
     fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
-        for idx in 0..prox.len() {
-            if !self.assigned[idx] {
+        for idx in 0..(prox.len() as usize) {
+            if !self.states[idx].assigned {
                 if self.expand_cluster(prox, idx, cluster_id) {
                     cluster_id += 1;
                 }
@@ -43,64 +54,71 @@ impl Dbscan {
         idx: usize,
         cluster_id: IndexType,
     ) -> bool {
-        assert!(idx < self.clusters.len());
-
         let prox_query = prox.query(idx);
-        let mut seeds: HashSet<usize> = prox_query
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, weight)| if *weight > 0 { Some(idx) } else { None })
-            .collect();
+        for (state, &weight) in self.states.iter_mut().zip(prox_query.iter()) {
+            state.seed = weight > 0;
+        }
 
         // Not a core point
         if prox_query.sum() < self.min_pts {
-            self.set_cluster_ids(&seeds, 0);
+            self.set_cluster_ids_on_seeds(0);
             return false;
         }
 
         // Core point: all seeds are density reachable
-        self.set_cluster_ids(&seeds, cluster_id);
-        seeds.remove(&idx);
+        self.set_cluster_ids_on_seeds(cluster_id);
+        unsafe {
+            self.states.get_unchecked_mut(idx).seed = false;
+        }
 
-        while let Some(idx) = seeds.iter().next().cloned() {
-            let prox_query = prox.query(idx);
+        while let Some(idx) = self
+            .states
+            .iter()
+            .filter_map(|state| if state.seed { Some(state.idx) } else { None })
+            .next()
+        {
+            let prox_query = prox.query(idx as usize);
             if prox_query.sum() >= self.min_pts {
                 for idx in prox_query
                     .iter()
                     .enumerate()
-                    .filter_map(|(idx, weight)| if *weight > 0 { Some(idx) } else { None })
+                    .filter_map(|(idx, &weight)| if weight > 0 { Some(idx) } else { None })
                 {
                     // TODO: try without unsafe
                     unsafe {
-                        let assigned = self.assigned.get_unchecked_mut(idx);
-                        let cluster = self.clusters.get_unchecked_mut(idx);
+                        let state = self.states.get_unchecked_mut(idx);
 
-                        if *assigned == false {
-                            seeds.insert(idx);
-                            *assigned = true;
-                            *cluster = cluster_id;
-                        } else if *cluster == 0 {
-                            *assigned = true;
-                            *cluster = cluster_id;
+                        if !state.assigned {
+                            state.assigned = true;
+                            state.cluster = cluster_id;
+                            state.seed = true;
+                        } else if state.cluster == 0 {
+                            state.cluster = cluster_id;
                         }
                     }
                 }
             }
 
-            seeds.remove(&idx);
+            unsafe {
+                self.states.get_unchecked_mut(idx as usize).seed = false;
+            }
         }
 
         true
     }
 
     // TODO: docstring
-    fn set_cluster_ids(&mut self, idxs: &HashSet<usize>, cluster_id: IndexType) {
-        unsafe {
-            for idx in idxs {
-                *self.assigned.get_unchecked_mut(*idx) = true;
-                *self.clusters.get_unchecked_mut(*idx) = cluster_id;
+    fn set_cluster_ids_on_seeds(&mut self, cluster_id: IndexType) {
+        for state in self.states.iter_mut() {
+            if state.seed {
+                state.cluster = cluster_id;
+                state.assigned = true;
             }
         }
+    }
+
+    fn clusters(self) -> Vec<IndexType> {
+        self.states.into_iter().map(|state| state.cluster).collect()
     }
 }
 
@@ -141,8 +159,8 @@ mod tests {
             }
         }
 
-        fn len(&self) -> usize {
-            self.n_1 + self.n_2
+        fn len(&self) -> IndexType {
+            (self.n_1 + self.n_2) as IndexType
         }
     }
 
@@ -169,7 +187,10 @@ mod tests {
         let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
         expected.append(&mut vec![expected_label_2; n_2 as usize]);
 
-        assert_eq!(dbscan.assigned, vec![true; (n_1 + n_2) as usize]);
-        assert_eq!(dbscan.clusters, expected);
+        let assigned: Vec<bool> = dbscan.states.iter().map(|state| state.assigned).collect();
+        let clusters: Vec<IndexType> = dbscan.clusters();
+
+        assert_eq!(assigned, vec![true; (n_1 + n_2) as usize]);
+        assert_eq!(clusters, expected);
     }
 }

@@ -29,11 +29,9 @@ impl Default for HsDbscanConfig {
 // TODO: docstring
 // TODO: return
 pub fn hs_dbscan<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &HsDbscanConfig) {
-    assert!(input.nrows() >= (IndexType::MAX as usize));
-
     // Create a proximity calculator
     let prox = MatrixProximity::new(input, &config.proximity);
 
     // Run dbscan
-    let clustering = dbscan(&prox, config.min_pts);
+    dbscan(&prox, config.min_pts);
 }

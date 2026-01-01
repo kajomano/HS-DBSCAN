@@ -1,30 +1,33 @@
-use crate::{
-    proximity::Proximity,
-    types::{IndexType, MatrixType},
-};
+use crate::{proximity::Proximity, types::IndexType};
 use std::collections::HashSet;
 
-pub struct Dbscan {
+// TODO: docstring
+pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> Vec<IndexType> {
+    let mut dbscan = Dbscan::new(prox.len(), min_pts);
+    dbscan.cluster(prox);
+    dbscan.clusters
+}
+
+struct Dbscan {
     min_pts: IndexType,
     assigned: Vec<bool>,
     clusters: Vec<IndexType>,
 }
 
 impl Dbscan {
-    pub fn new<const NCOLS: usize>(input: &MatrixType<NCOLS>, min_pts: IndexType) -> Self {
+    fn new(n: usize, min_pts: IndexType) -> Self {
         Self {
             min_pts,
-            assigned: vec![false; input.nrows()],
-            clusters: vec![0; input.nrows()],
+            assigned: vec![false; n],
+            clusters: vec![0; n],
         }
     }
 
     // TODO: docstring
-    // TODO: return clustering
-    pub fn cluster<P: Proximity>(&mut self, prox: &P) {
+    fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
-        for idx in 0..self.assigned.len() {
+        for idx in 0..prox.len() {
             if !self.assigned[idx] {
                 if self.expand_cluster(prox, idx, cluster_id) {
                     cluster_id += 1;
@@ -90,6 +93,7 @@ impl Dbscan {
         true
     }
 
+    // TODO: docstring
     fn set_cluster_ids(&mut self, idxs: &HashSet<usize>, cluster_id: IndexType) {
         unsafe {
             for idx in idxs {
@@ -102,16 +106,13 @@ impl Dbscan {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        dbscan::Dbscan,
-        proximity::Proximity,
-        types::{IndexType, MatrixType},
-    };
+    use crate::{dbscan::Dbscan, proximity::Proximity, types::IndexType};
     use nalgebra::{Dyn, OVector, VectorView};
     use rstest::rstest;
 
     struct TestProximity {
         n_1: usize,
+        n_2: usize,
         query_1: OVector<IndexType, Dyn>,
         query_2: OVector<IndexType, Dyn>,
     }
@@ -119,7 +120,8 @@ mod tests {
     impl TestProximity {
         pub fn new(n_1: usize, n_2: usize, in_proximity: bool) -> Self {
             Self {
-                n_1: n_1,
+                n_1,
+                n_2,
                 query_1: OVector::<IndexType, Dyn>::from_fn(n_1 + n_2, |r, _| {
                     if r < n_1 || in_proximity { 1 } else { 0 }
                 }),
@@ -137,6 +139,10 @@ mod tests {
             } else {
                 self.query_2.column(0)
             }
+        }
+
+        fn len(&self) -> usize {
+            self.n_1 + self.n_2
         }
     }
 
@@ -156,8 +162,7 @@ mod tests {
         #[case] expected_label_2: IndexType,
     ) {
         let prox = TestProximity::new(n_1, n_2, in_proximity);
-        let input = MatrixType::<2>::zeros(n_1 + n_2);
-        let mut dbscan = Dbscan::new(&input, 3);
+        let mut dbscan = Dbscan::new(prox.len(), 3);
 
         dbscan.cluster(&prox);
 

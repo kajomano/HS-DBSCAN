@@ -6,10 +6,9 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
     HsDbscanConfig,
-    dbscan::Dbscan,
+    dbscan::dbscan,
     generate::{Generate, UniformBox},
     proximity::{MatrixProximity, Proximity, ProximityConfig},
-    types::MatrixType,
 };
 use std::{hint::black_box, time::Duration};
 
@@ -74,18 +73,12 @@ fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &m
     let mut group = c.benchmark_group(format!("dbscan_{}_{}", config.proximity.norm, generator));
     group.measurement_time(Duration::from_secs(10));
 
-    let inner_fn = |input: &MatrixType<2>, prox: &MatrixProximity| {
-        let mut dbscan = Dbscan::new(input, config.min_pts);
-        dbscan.cluster(prox);
-    };
-
     macro_rules! dbscan {
         ($n:literal) => {
-            let input = generator.generate($n);
-            let prox = MatrixProximity::new(&input, &config.proximity);
+            let prox = MatrixProximity::new(&generator.generate($n), &config.proximity);
 
             group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(inner_fn(&input, &prox)))
+                b.iter(|| black_box(dbscan(&prox, config.min_pts)))
             });
         };
     }

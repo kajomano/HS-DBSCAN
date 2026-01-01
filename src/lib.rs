@@ -1,5 +1,5 @@
 use crate::{
-    dbscan::Dbscan,
+    dbscan::dbscan,
     proximity::{MatrixProximity, ProximityConfig},
     types::{FloatType, IndexType, MatrixType},
 };
@@ -27,15 +27,13 @@ impl Default for HsDbscanConfig {
 }
 
 // TODO: docstring
+// TODO: return
 pub fn hs_dbscan<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &HsDbscanConfig) {
     assert!(input.nrows() >= (IndexType::MAX as usize));
 
     // Create a proximity calculator
     let prox = MatrixProximity::new(input, &config.proximity);
 
-    // Create the dbscan object
-    let mut dbscan = Dbscan::new(input, config.min_pts);
-
     // Run dbscan
-    dbscan.cluster(&prox);
+    let clustering = dbscan(&prox, config.min_pts);
 }

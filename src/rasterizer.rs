@@ -1,6 +1,7 @@
 use crate::types::{FloatType, IndexType, MatrixType, RasterType};
 use indexmap::IndexMap;
 use nalgebra::{Dyn, OVector};
+use rapidhash::fast::GlobalState;
 
 pub struct Rasterizer<const NCOLS: usize> {
     mapping: OVector<IndexType, Dyn>,
@@ -13,7 +14,8 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
         assert!(input.nrows() <= IndexType::MAX as usize);
         assert!(raster_res > 0.0);
 
-        let mut bin_map = IndexMap::<Vec<RasterType>, IndexType>::new();
+        let mut bin_map =
+            IndexMap::<Vec<RasterType>, IndexType, GlobalState>::with_hasher(GlobalState::new());
         // // NOTE: centroids could be re-calculated from the bin_map keys
         // let mut centroids = Vec::<&Matrix<FloatType, Const<1>, Const<NCOLS>, _>>::new();
         let mut mapping = OVector::<IndexType, Dyn>::zeros(input.nrows());

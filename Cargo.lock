@@ -407,6 +407,7 @@ dependencies = [
  "nalgebra",
  "rand",
  "rand_distr",
+ "rapidhash",
  "rstest",
  "strum",
  "strum_macros",
@@ -714,6 +715,15 @@ checksum = "6a8615d50dcf34fa31f7ab52692afec947c4dd0ab803cc87cb3b0b4570ff7463"
 dependencies = [
  "num-traits",
  "rand",
+]
+
+[[package]]
+name = "rapidhash"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2988730ee014541157f48ce4dcc603940e00915edc3c7f9a8d78092256bb2493"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]

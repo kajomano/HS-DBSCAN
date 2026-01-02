@@ -9,10 +9,34 @@ use hs_dbscan::{
     dbscan::dbscan,
     generate::{Generate, UniformBox},
     proximity::{MatrixProximity, Proximity},
-    types::IndexType,
+    rasterizer::Rasterizer,
+    types::{FloatType, IndexType},
 };
 use nalgebra::{Dyn, OVector};
 use std::{hint::black_box, time::Duration};
+
+fn benchmark_rasterizer_init(
+    raster_res: FloatType,
+    generator: &impl Generate<2>,
+    c: &mut Criterion,
+) {
+    let mut group = c.benchmark_group(format!("rast_init_{}_{}", raster_res, generator));
+    group.measurement_time(Duration::from_secs(5));
+
+    macro_rules! proximity_init {
+        ($n:literal) => {
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(Rasterizer::new(&generator.generate($n), raster_res)))
+            });
+        };
+    }
+
+    proximity_init!(100);
+    proximity_init!(1000);
+    proximity_init!(10000);
+
+    group.finish();
+}
 
 fn benchmark_proximity_init(
     proximity_config: &ProximityConfig,
@@ -106,15 +130,25 @@ fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &m
 fn benchmark_proximity(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
 
-    // Proximity
-    benchmark_proximity_init(
-        &config.proximity,
+    // Rasterizer
+    benchmark_rasterizer_init(
+        config.raster_res,
         &UniformBox {
             center: [5.0, 5.0],
             size: 5.0,
         },
         c,
     );
+
+    // // Proximity
+    // benchmark_proximity_init(
+    //     &config.proximity,
+    //     &UniformBox {
+    //         center: [5.0, 5.0],
+    //         size: 5.0,
+    //     },
+    //     c,
+    // );
     // benchmark_proximity_query(
     //     &config.proximity,
     //     &UniformBox {
@@ -141,6 +175,10 @@ criterion_main!(benches);
 // =====================================================================================================================
 
 // f64
+// rast_init_1_uniformbox/100    time:   [8.0432 µs 8.0551 µs 8.0671 µs]
+// rast_init_1_uniformbox/1000   time:   [51.118 µs 51.230 µs 51.336 µs]
+// rast_init_1_uniformbox/10000  time:   [485.45 µs 486.76 µs 488.00 µs]
+
 // prox_init_L2_uniformbox/100   time:   [13.791 µs 13.802 µs 13.813 µs]
 // prox_init_L2_uniformbox/1000  time:   [1.4627 ms 1.4645 ms 1.4664 ms]
 // prox_init_L2_uniformbox/10000 time:   [178.93 ms 179.14 ms 179.35 ms]

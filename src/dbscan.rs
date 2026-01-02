@@ -132,7 +132,7 @@ impl Dbscan {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use crate::{dbscan::Dbscan, proximity::Proximity, types::IndexType};
     use nalgebra::{Dyn, OVector, VectorView};
     use rstest::rstest;

@@ -1,0 +1,56 @@
+use crate::types::{FloatType, IndexType};
+use strum_macros::Display;
+
+/// Top-level configuration struct for HS-DBSCAN.
+#[derive(Clone, Copy, Debug)]
+pub struct HsDbscanConfig {
+    pub raster_res: FloatType,
+    pub proximity: ProximityConfig,
+    pub min_pts: IndexType,
+}
+
+/// Configuration for proximity calculation.
+#[derive(Clone, Copy, Debug)]
+pub struct ProximityConfig {
+    pub eps: FloatType,
+    pub norm: NormConfig,
+}
+
+/// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
+#[derive(Clone, Copy, Debug, Display)]
+pub enum NormConfig {
+    L1,
+    L2,
+    L2Squared,
+    Linf,
+}
+
+/// Trait to define default configuration used in unit tests and benchmarks
+pub trait TestDefault {
+    fn test_default() -> Self;
+}
+
+impl TestDefault for HsDbscanConfig {
+    fn test_default() -> Self {
+        Self {
+            raster_res: 1.0,
+            proximity: TestDefault::test_default(),
+            min_pts: 10,
+        }
+    }
+}
+
+impl TestDefault for ProximityConfig {
+    fn test_default() -> Self {
+        Self {
+            eps: 3.0,
+            norm: TestDefault::test_default(),
+        }
+    }
+}
+
+impl TestDefault for NormConfig {
+    fn test_default() -> Self {
+        Self::L2
+    }
+}

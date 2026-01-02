@@ -43,10 +43,10 @@
     - Storing the idx in the state struct is a 6~13% speedup
 - [x] Move repeated benchmark internals to macros/functions
 
-- [ ] Move `Default` from the config structs into another trait
+- [x] Move `Default` from the config structs into another trait
 
-- [ ] Handle weighted points
-  - [ ] Add unit test
+- [x] Handle weighted points
+  - [x] Add unit test
 - [ ] Rasterization
 
 - [ ] Python bindings

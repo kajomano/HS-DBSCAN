@@ -6,13 +6,13 @@
 // https://github.com/savish/dbscan
 
 use hs_dbscan::{
-    HsDbscanConfig,
+    config::{HsDbscanConfig, TestDefault},
     generate::{Generate, UniformBox},
     hs_dbscan,
 };
 
 fn main() {
-    let config = HsDbscanConfig::default();
+    let config = HsDbscanConfig::test_default();
     let input = UniformBox {
         center: [5.0, 5.0],
         size: 5.0,

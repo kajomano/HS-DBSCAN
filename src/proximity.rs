@@ -1,24 +1,16 @@
-use crate::types::{FloatType, IndexType, MatrixType};
+use crate::{
+    config::{NormConfig, ProximityConfig},
+    types::{FloatType, IndexType, MatrixType},
+};
 use nalgebra::{
     Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, Vector, VectorView,
 };
 use std::ops::SubAssign;
-use strum_macros::Display;
 
 // NOTE: the bound on S is not enforced through type aliases, so add it as a bound on the function too!
 #[allow(type_alias_bounds)]
 type RowVectorViewType<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>> =
     Matrix<FloatType, Const<1>, Const<NCOLS>, S>;
-
-/// Different supported [norms](https://docs.rs/nalgebra/latest/nalgebra/base/trait.Norm.html).
-#[derive(Clone, Copy, Debug, Default, Display)]
-pub enum NormConfig {
-    L1,
-    #[default]
-    L2,
-    L2Squared,
-    Linf,
-}
 
 trait Norm {
     fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
@@ -68,21 +60,6 @@ impl Norm for LinfNorm {
         input: &RowVectorViewType<NCOLS, S>,
     ) -> FloatType {
         input.apply_norm(&UniformNorm)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ProximityConfig {
-    pub eps: FloatType,
-    pub norm: NormConfig,
-}
-
-impl Default for ProximityConfig {
-    fn default() -> Self {
-        Self {
-            eps: 3.0,
-            norm: Default::default(),
-        }
     }
 }
 
@@ -191,8 +168,9 @@ impl Proximity for MatrixProximity {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use crate::{
+        config::TestDefault,
         proximity::{
             L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,
             ProximityConfig,
@@ -277,7 +255,7 @@ mod tests {
                 RowVector2::from_row_slice(&point_2),
             ]),
             &OVector::<IndexType, Dyn>::from_column_slice(&[weight_1, weight_2]),
-            &ProximityConfig::default(),
+            &ProximityConfig::test_default(),
         );
 
         let expected = OMatrix::<IndexType, Dyn, Dyn>::from_column_slice(2, 2, &expected);
@@ -293,7 +271,7 @@ mod tests {
         let prox = MatrixProximity::new(
             &MatrixType::<2>::zeros(n),
             &OVector::<IndexType, Dyn>::repeat(n, 1),
-            &Default::default(),
+            &ProximityConfig::test_default(),
         );
 
         assert_eq!(prox.proximities.shape(), (n, n))
@@ -305,7 +283,7 @@ mod tests {
         MatrixProximity::new(
             &MatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(3, 1),
-            &ProximityConfig::default(),
+            &ProximityConfig::test_default(),
         );
     }
 
@@ -317,7 +295,7 @@ mod tests {
             &OVector::<IndexType, Dyn>::repeat(2, 1),
             &ProximityConfig {
                 eps: -1.0,
-                norm: NormConfig::L1,
+                norm: NormConfig::test_default(),
             },
         );
     }

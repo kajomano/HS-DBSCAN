@@ -5,10 +5,10 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
-    HsDbscanConfig,
+    config::{HsDbscanConfig, ProximityConfig, TestDefault},
     dbscan::dbscan,
     generate::{Generate, UniformBox},
-    proximity::{MatrixProximity, Proximity, ProximityConfig},
+    proximity::{MatrixProximity, Proximity},
     types::IndexType,
 };
 use nalgebra::{Dyn, OVector};
@@ -104,7 +104,7 @@ fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &m
 }
 
 fn benchmark_proximity(c: &mut Criterion) {
-    let config = HsDbscanConfig::default();
+    let config = HsDbscanConfig::test_default();
 
     // Proximity
     benchmark_proximity_init(

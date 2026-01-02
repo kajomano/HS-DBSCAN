@@ -48,8 +48,16 @@
 - [x] Handle weighted points
   - [x] Add unit test
 - [ ] Rasterization
+  - [x] Mapping
+  - [x] Unit tests
+  - [ ] Benchmarks
+    - [ ] Try to tune it
+  - [ ] I know NCOLS at compile time, should not need to collect into `Vec`
+  - [ ] Centroids could also be stored
 
-- [ ] Python bindings
+- [ ] Try converting to column-major-friendly layout for speed?
+
+- [ ] Plots
 
 - [ ] Clippy
 

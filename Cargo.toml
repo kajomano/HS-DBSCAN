@@ -12,6 +12,7 @@ strum = "0.27.2"
 strum_macros = "0.27.2"
 rstest = "0.26.1"
 approx = "0.5.1"
+indexmap = "2.12.1"
 
 [[bench]]
 name = "benchmarks"

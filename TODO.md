@@ -51,13 +51,13 @@
   - [x] Mapping
   - [x] Unit tests
   - [ ] Benchmarks
-    - [ ] Try to tune it
+  - [ ] Try to tune it
     - [ ] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
       - [ ] [https://github.com/ogxd/gxhash]
       - [x] [https://github.com/hoxxep/rapidhash]
         - Small (~10%) improvement
       - [ ] Something manual and super simple
-  - [ ] I know NCOLS at compile time, should not need to collect into `Vec`
+  - [ ] I know NCOLS at compile time, should not need to collect into `Vec` -> Try a macro
   - [ ] Centroids could also be stored
 
 - [ ] Try converting to column-major-friendly layout for speed?
@@ -69,7 +69,7 @@
 ## Issues
 - Norm variants don't change the performance
   - not sure what it was, now they change significantly
-
+- Smaller `RasterTypes` give a slowdown (i32, i16)
 
 ## Housekeeping
 - [ ] Add LICENSE

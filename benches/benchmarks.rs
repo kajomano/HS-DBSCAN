@@ -16,7 +16,8 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
     config::{HsDbscanConfig, ProximityConfig, test::TestDefault},
     dbscan::dbscan,
-    generate::{Generate, UniformBox},
+    generate::{Generate, TwoUniformSpheres, UniformBox, UniformSphere},
+    hs_dbscan,
     proximity::{MatrixProximity, Proximity},
     rasterizer::Rasterizer,
     types::{FloatType, IndexVectorType},
@@ -138,7 +139,7 @@ fn benchmark_proximity_query(
 }
 
 fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &mut Criterion) {
-    let mut group = c.benchmark_group(format!("dbscan_{}_{}", config.proximity.norm, generator));
+    let mut group = c.benchmark_group(format!("dbscan_{}", generator));
     group.measurement_time(Duration::from_secs(10));
 
     macro_rules! dbscan {
@@ -162,20 +163,43 @@ fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &m
     group.finish();
 }
 
+fn benchmark_e2e(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &mut Criterion) {
+    let mut group = c.benchmark_group(format!("e2e_{}", generator));
+    group.measurement_time(Duration::from_secs(10));
+
+    macro_rules! e2e {
+        ($n:literal) => {
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(hs_dbscan(&generator.generate($n), config)))
+            });
+        };
+    }
+
+    e2e!(100);
+    e2e!(1000);
+    e2e!(10000);
+
+    group.finish();
+}
+
 fn benchmarks(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
-    let generator = UniformBox::test_default();
 
     // Rasterizer
-    benchmark_rasterizer_init(config.raster_res.unwrap(), &generator, c);
-    benchmark_rasterizer_map(config.raster_res.unwrap(), &generator, c);
+    benchmark_rasterizer_init(config.raster_res.unwrap(), &UniformBox::test_default(), c);
+    benchmark_rasterizer_map(config.raster_res.unwrap(), &UniformBox::test_default(), c);
 
     // Proximity
-    benchmark_proximity_init(&config.proximity, &generator, c);
-    benchmark_proximity_query(&config.proximity, &generator, c);
+    benchmark_proximity_init(&config.proximity, &UniformBox::test_default(), c);
+    benchmark_proximity_query(&config.proximity, &UniformBox::test_default(), c);
 
     // DBSCAN
-    benchmark_dbscan(&config, &generator, c);
+    benchmark_dbscan(&config, &UniformBox::test_default(), c);
+
+    // End-to-end
+    benchmark_e2e(&config, &UniformBox::test_default(), c);
+    benchmark_e2e(&config, &UniformSphere::test_default(), c);
+    benchmark_e2e(&config, &TwoUniformSpheres::test_default(), c);
 }
 
 criterion_group!(benches, benchmarks);
@@ -184,14 +208,27 @@ criterion_main!(benches);
 // =====================================================================================================================
 
 // f64
-// rast_init_1_uniformbox/100    time:   [5.8178 µs 5.8258 µs 5.8340 µs]
-// rast_init_1_uniformbox/1000   time:   [40.630 µs 40.714 µs 40.801 µs]
-// rast_init_1_uniformbox/10000  time:   [391.59 µs 392.91 µs 394.23 µs]
+
+// rast_init_1_uniformbox/100    time:   [2.8790 µs 2.9260 µs 2.9690 µs]
+// rast_init_1_uniformbox/1000   time:   [16.550 µs 16.575 µs 16.603 µs]
+// rast_init_1_uniformbox/10000  time:   [150.90 µs 151.08 µs 151.28 µs]
 
 // prox_init_L2_uniformbox/100   time:   [13.791 µs 13.802 µs 13.813 µs]
 // prox_init_L2_uniformbox/1000  time:   [1.4627 ms 1.4645 ms 1.4664 ms]
 // prox_init_L2_uniformbox/10000 time:   [178.93 ms 179.14 ms 179.35 ms]
 
-// dbscan_L2_uniformbox/100      time:   [12.873 µs 12.906 µs 12.939 µs]
-// dbscan_L2_uniformbox/1000     time:   [2.4927 ms 2.4990 ms 2.5051 ms]
-// dbscan_L2_uniformbox/10000    time:   [286.71 ms 287.09 ms 287.50 ms]
+// dbscan_uniformbox/100         time:   [12.873 µs 12.906 µs 12.939 µs]
+// dbscan_uniformbox/1000        time:   [2.4927 ms 2.4990 ms 2.5051 ms]
+// dbscan_uniformbox/10000       time:   [286.71 ms 287.09 ms 287.50 ms]
+
+// e2e_uniformbox/100            time:   [10.427 µs 10.437 µs 10.448 µs]
+// e2e_uniformbox/1000           time:   [38.645 µs 38.685 µs 38.730 µs]
+// e2e_uniformbox/10000          time:   [307.81 µs 308.09 µs 308.38 µs]
+
+// e2e_uniformsphere/100         time:   [4.1890 µs 4.1933 µs 4.1979 µs]
+// e2e_uniformsphere/1000        time:   [35.013 µs 35.042 µs 35.073 µs]
+// e2e_uniformsphere/10000       time:   [343.49 µs 343.82 µs 344.16 µs]
+
+// e2e_2uniformspheres/100       time:   [11.076 µs 11.089 µs 11.104 µs]
+// e2e_2uniformspheres/1000      time:   [68.490 µs 68.550 µs 68.616 µs]
+// e2e_2uniformspheres/10000     time:   [507.15 µs 507.54 µs 507.97 µs]

@@ -2,7 +2,7 @@ use crate::{
     config::HsDbscanConfig,
     dbscan::dbscan,
     proximity::MatrixProximity,
-    types::{IndexType, MatrixType},
+    types::{FloatMatrixType, IndexType},
 };
 use nalgebra::{Dyn, OVector};
 
@@ -15,7 +15,7 @@ pub mod types;
 
 // TODO: docstring
 // TODO: return
-pub fn hs_dbscan<const NCOLS: usize>(input: &MatrixType<NCOLS>, config: &HsDbscanConfig) {
+pub fn hs_dbscan<const NCOLS: usize>(input: &FloatMatrixType<NCOLS>, config: &HsDbscanConfig) {
     // Create mock weights
     let weights = OVector::<IndexType, Dyn>::repeat(input.nrows(), 1);
 

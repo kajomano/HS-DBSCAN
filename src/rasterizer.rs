@@ -1,16 +1,16 @@
-use crate::types::{FloatType, IndexType, MatrixType, RasterType};
+use crate::types::{FloatMatrixType, FloatType, IndexType, IndexVectorType, RasterType};
 use indexmap::IndexMap;
 use nalgebra::{Dyn, OVector};
 use rapidhash::fast::GlobalState;
 
 pub struct Rasterizer<const NCOLS: usize> {
-    mapping: OVector<IndexType, Dyn>,
-    centroids: MatrixType<NCOLS>,
-    weights: OVector<IndexType, Dyn>,
+    mapping: IndexVectorType,
+    centroids: FloatMatrixType<NCOLS>,
+    weights: IndexVectorType,
 }
 
 impl<const NCOLS: usize> Rasterizer<NCOLS> {
-    pub fn new(input: &MatrixType<NCOLS>, raster_res: FloatType) -> Self {
+    pub fn new(input: &FloatMatrixType<NCOLS>, raster_res: FloatType) -> Self {
         assert!(input.nrows() <= IndexType::MAX as usize);
         assert!(raster_res > 0.0);
 
@@ -44,7 +44,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
         }
 
         // Create the centroids matrix and weights vector
-        let centroids = MatrixType::<NCOLS>::from_row_slice(
+        let centroids = FloatMatrixType::<NCOLS>::from_row_slice(
             &bin_map
                 .keys()
                 .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res))
@@ -63,11 +63,11 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
         }
     }
 
-    pub fn rasterize(&self) -> (&MatrixType<NCOLS>, &OVector<IndexType, Dyn>) {
+    pub fn rasterize(&self) -> (&FloatMatrixType<NCOLS>, &IndexVectorType) {
         (&self.centroids, &self.weights)
     }
 
-    pub fn map_back(&self, cluster_ids: &OVector<IndexType, Dyn>) -> OVector<IndexType, Dyn> {
+    pub fn map_back(&self, cluster_ids: &IndexVectorType) -> IndexVectorType {
         assert!(self.centroids.nrows() == cluster_ids.nrows());
 
         let mut mapped_ids = OVector::<IndexType, Dyn>::zeros(self.mapping.nrows());
@@ -85,11 +85,12 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
 #[cfg(test)]
 mod test {
     use crate::{
+        generate::test::generate_2_point_dataset,
         rasterizer::Rasterizer,
-        types::{FloatType, IndexType, MatrixType},
+        types::{FloatMatrixType, FloatType, IndexType, IndexVectorType},
     };
     use approx::assert_relative_eq;
-    use nalgebra::{Dyn, OVector, RowVector2};
+    use nalgebra::{Dyn, OVector};
     use rstest::rstest;
 
     #[rstest]
@@ -104,37 +105,36 @@ mod test {
         #[case] expected: [FloatType; 2],
     ) {
         assert_relative_eq!(
-            Rasterizer::new(&MatrixType::<2>::from_row_slice(&input), raster_res).centroids,
-            &MatrixType::from_row_slice(&expected),
+            Rasterizer::new(&FloatMatrixType::<2>::from_row_slice(&input), raster_res).centroids,
+            &FloatMatrixType::from_row_slice(&expected),
             epsilon = FloatType::EPSILON
         );
     }
 
     #[rstest]
-    #[case([0.0, 0.0], 1, [0.0, 0.0], 1, 1.0, vec![0.0, 0.0], vec![2])]
-    #[case([0.0, 0.1], 1, [1.1, 1.1], 1, 1.0, vec![0.0, 0.0, 1.0, 1.0], vec![1, 1])]
-    #[case([0.0, 0.1], 1, [1.1, 1.1], 10, 1.0, vec![0.0, 0.0, 1.0, 1.0], vec![1, 10])]
-    #[case([0.0, 0.1], 10, [1.1, 1.1], 1, 1.0, vec![0.0, 0.0, 1.0, 1.0], vec![10, 1])]
-    #[case([-0.1, -0.1], 10, [0.1, 0.1], 10, 1.0, vec![-1.0, -1.0, 0.0, 0.0], vec![10, 10])]
+    #[case([0.0, 0.0], 1, [0.0, 0.0], 1, 1.0, &[0.0, 0.0], &[2])]
+    #[case([0.0, 0.1], 1, [1.1, 1.1], 1, 1.0, &[0.0, 0.0, 1.0, 1.0], &[1, 1])]
+    #[case([0.0, 0.1], 1, [1.1, 1.1], 10, 1.0, &[0.0, 0.0, 1.0, 1.0], &[1, 10])]
+    #[case([0.0, 0.1], 10, [1.1, 1.1], 1, 1.0, &[0.0, 0.0, 1.0, 1.0], &[10, 1])]
+    #[case([-0.1, -0.1], 10, [0.1, 0.1], 10, 1.0, &[-1.0, -1.0, 0.0, 0.0], &[10, 10])]
     fn test_rasterizer_e2e(
         #[case] point_1: [FloatType; 2],
         #[case] n_1: usize,
         #[case] point_2: [FloatType; 2],
         #[case] n_2: usize,
         #[case] raster_res: FloatType,
-        #[case] expected_centroids: Vec<FloatType>,
-        #[case] expected_weights: Vec<IndexType>,
+        #[case] expected_centroids: &[FloatType],
+        #[case] expected_weights: &[IndexType],
     ) {
-        let mut rows = vec![RowVector2::from_row_slice(&point_1); n_1];
-        rows.append(&mut vec![RowVector2::from_row_slice(&point_2); n_2]);
-        let input = MatrixType::from_rows(&rows);
-
-        let rasterizer = Rasterizer::new(&input, raster_res);
+        let rasterizer = Rasterizer::new(
+            &generate_2_point_dataset(point_1, n_1, point_2, n_2),
+            raster_res,
+        );
         let (centroids, weights) = rasterizer.rasterize();
 
         assert_relative_eq!(
             centroids,
-            &MatrixType::from_row_slice(&expected_centroids),
+            &FloatMatrixType::from_row_slice(&expected_centroids),
             epsilon = FloatType::EPSILON
         );
         assert_eq!(
@@ -143,9 +143,38 @@ mod test {
         );
     }
 
+    #[rstest]
+    #[case(1, [0.0, 0.0], 1, &[0], &[0, 0])]
+    #[case(1, [10.0, 0.0], 1, &[0, 1], &[0, 1])]
+    #[case(5, [10.0, 0.0], 3, &[0, 1], &[0, 0, 0, 0, 0, 1, 1, 1])]
+    fn test_rasterizer_mapping(
+        #[case] n_1: usize,
+        #[case] point_2: [FloatType; 2],
+        #[case] n_2: usize,
+        #[case] cluster_ids: &[IndexType],
+        #[case] expected: &[IndexType],
+    ) {
+        let rasterizer = Rasterizer::new(
+            &generate_2_point_dataset([0.0, 0.0], n_1, point_2, n_2),
+            1.0,
+        );
+
+        let mapped_ids = rasterizer.map_back(&IndexVectorType::from_column_slice(cluster_ids));
+        let expected_ids = IndexVectorType::from_column_slice(expected);
+
+        assert_eq!(mapped_ids, expected_ids)
+    }
+
     #[test]
     #[should_panic]
     fn test_rasterizer_invalid_res() {
-        Rasterizer::new(&MatrixType::<2>::zeros(1), 0.0);
+        Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 0.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_rasterizer_invalid_map_input() {
+        let rasterizer = Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 1.0);
+        rasterizer.map_back(&IndexVectorType::zeros(2));
     }
 }

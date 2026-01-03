@@ -1,7 +1,10 @@
-use crate::{proximity::Proximity, types::IndexType};
+use crate::{
+    proximity::Proximity,
+    types::{IndexType, IndexVectorType},
+};
 
 // TODO: docstring
-pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> Vec<IndexType> {
+pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> IndexVectorType {
     let mut dbscan = Dbscan::new(prox, min_pts);
     dbscan.cluster(prox);
     dbscan.clusters()
@@ -126,22 +129,30 @@ impl Dbscan {
         }
     }
 
-    fn clusters(self) -> Vec<IndexType> {
-        self.states.into_iter().map(|state| state.cluster).collect()
+    // TODO: docstring
+    fn clusters(self) -> IndexVectorType {
+        IndexVectorType::from_iterator(
+            self.states.len(),
+            self.states.into_iter().map(|state| state.cluster),
+        )
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{dbscan::Dbscan, proximity::Proximity, types::IndexType};
+    use crate::{
+        dbscan::Dbscan,
+        proximity::Proximity,
+        types::{IndexType, IndexVectorType},
+    };
     use nalgebra::{Dyn, OVector, VectorView};
     use rstest::rstest;
 
     struct TestProximity {
         n_1: usize,
         n_2: usize,
-        query_1: OVector<IndexType, Dyn>,
-        query_2: OVector<IndexType, Dyn>,
+        query_1: IndexVectorType,
+        query_2: IndexVectorType,
     }
 
     impl TestProximity {
@@ -193,13 +204,17 @@ mod test {
 
         dbscan.cluster(&prox);
 
-        let mut expected: Vec<IndexType> = vec![expected_label_1; n_1];
-        expected.append(&mut vec![expected_label_2; n_2]);
+        let mut expected_ids = vec![expected_label_1; n_1];
+        expected_ids.append(&mut vec![expected_label_2; n_2]);
+        let expected_ids = IndexVectorType::from_column_slice(&expected_ids);
 
-        let assigned: Vec<bool> = dbscan.states.iter().map(|state| state.assigned).collect();
-        let clusters: Vec<IndexType> = dbscan.clusters();
+        let assigned = dbscan
+            .states
+            .iter()
+            .map(|state| state.assigned)
+            .collect::<Vec<_>>();
 
         assert_eq!(assigned, vec![true; n_1 + n_2]);
-        assert_eq!(clusters, expected);
+        assert_eq!(dbscan.clusters(), expected_ids);
     }
 }

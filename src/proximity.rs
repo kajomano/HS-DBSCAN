@@ -1,6 +1,6 @@
 use crate::{
     config::{NormConfig, ProximityConfig},
-    types::{FloatType, IndexType, MatrixType},
+    types::{FloatMatrixType, FloatType, IndexType},
 };
 use nalgebra::{
     Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, Vector, VectorView,
@@ -81,7 +81,7 @@ pub struct MatrixProximity {
 
 impl MatrixProximity {
     pub fn new<const NCOLS: usize, S: Storage<IndexType, Dyn>>(
-        input: &MatrixType<NCOLS>,
+        input: &FloatMatrixType<NCOLS>,
         weights: &Vector<IndexType, Dyn, S>,
         config: &ProximityConfig,
     ) -> Self {
@@ -104,12 +104,12 @@ impl MatrixProximity {
     /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
     /// means outside of the proximity, and anything larger than 0 means inside the proximity.
     fn pairwise_proximities<const NCOLS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
-        input: &MatrixType<NCOLS>,
+        input: &FloatMatrixType<NCOLS>,
         weights: &Vector<IndexType, Dyn, S>,
         norm: N,
         eps: FloatType,
     ) -> OMatrix<IndexType, Dyn, Dyn> {
-        let mut buffer = MatrixType::zeros(input.nrows());
+        let mut buffer = FloatMatrixType::zeros(input.nrows());
         let mut proximities = OMatrix::<IndexType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
 
         let n = input.nrows();
@@ -171,11 +171,12 @@ impl Proximity for MatrixProximity {
 mod test {
     use crate::{
         config::TestDefault,
+        generate::test::generate_2_point_dataset,
         proximity::{
             L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,
             ProximityConfig,
         },
-        types::{FloatType, IndexType, MatrixType},
+        types::{FloatMatrixType, FloatType, IndexType},
     };
     use approx::assert_relative_eq;
     use nalgebra::{Dyn, OMatrix, OVector, RowVector2};
@@ -223,10 +224,7 @@ mod test {
         #[case] expected: IndexType,
     ) {
         let prox = MatrixProximity::new(
-            &MatrixType::from_rows(&[
-                RowVector2::from_row_slice(&point_1),
-                RowVector2::from_row_slice(&point_2),
-            ]),
+            &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::repeat(2, 1),
             &ProximityConfig { eps, norm },
         );
@@ -250,10 +248,7 @@ mod test {
         #[case] expected: [IndexType; 4],
     ) {
         let prox = MatrixProximity::new(
-            &MatrixType::from_rows(&[
-                RowVector2::from_row_slice(&point_1),
-                RowVector2::from_row_slice(&point_2),
-            ]),
+            &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::from_column_slice(&[weight_1, weight_2]),
             &ProximityConfig::test_default(),
         );
@@ -269,7 +264,7 @@ mod test {
     #[case(10)]
     fn test_marix_proximity_shape(#[case] n: usize) {
         let prox = MatrixProximity::new(
-            &MatrixType::<2>::zeros(n),
+            &FloatMatrixType::<2>::zeros(n),
             &OVector::<IndexType, Dyn>::repeat(n, 1),
             &ProximityConfig::test_default(),
         );
@@ -281,7 +276,7 @@ mod test {
     #[should_panic]
     fn test_matrix_proximity_invalid_input_rows() {
         MatrixProximity::new(
-            &MatrixType::<2>::identity(2),
+            &FloatMatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(3, 1),
             &ProximityConfig::test_default(),
         );
@@ -291,7 +286,7 @@ mod test {
     #[should_panic]
     fn test_matrix_proximity_invalid_eps() {
         MatrixProximity::new(
-            &MatrixType::<2>::identity(2),
+            &FloatMatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(2, 1),
             &ProximityConfig {
                 eps: -1.0,

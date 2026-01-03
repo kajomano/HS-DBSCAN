@@ -2,7 +2,7 @@
 - [x] Write dumb implementation
 - [x] Write unit tests
 - [ ] Write benchmarks
-- [ ] Write python bindings
+- [ ] Write plotting
 - Extend with:
   - [x] Other norms
   - [x] Rasterization
@@ -48,11 +48,11 @@
 - [x] Handle weighted points
   - [x] Add unit test
 - [x] Rasterization
-  - [x] Mapping
+  - [x] Mapper
   - [x] Unit tests
     - [x] Mapper unit test
   - [] Benchmarks
-    - [ ] Mapping benchmark
+    - [ ] Mapper benchmark
   - [x] Try to tune it
     - [x] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
       - [x] [https://github.com/ogxd/gxhash]
@@ -82,6 +82,7 @@
 - Norm variants don't change the performance
   - not sure what it was, now they change significantly
 - Smaller `RasterTypes` give a slowdown (i32, i16)
+  - Fixed once I cleaned up inefficiencies in the rasterizer
 
 ## Housekeeping
 - [ ] Add LICENSE

@@ -18,7 +18,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
             IndexMap::<[RasterType; NCOLS], IndexType, fast::GlobalState>::with_hasher(
                 fast::GlobalState::default(),
             );
-        let mut mapping = OVector::<IndexType, Dyn>::zeros(input.nrows());
+        let mut mapping = IndexVectorType::zeros(input.nrows());
 
         // Bin the points
         let mut binned_float = input / raster_res;

@@ -80,10 +80,12 @@
 - [ ] Clippy
 
 ## Issues
-- Norm variants don't change the performance
+- [x] Norm variants don't change the performance
   - not sure what it was, now they change significantly
-- Smaller `RasterTypes` give a slowdown (i32, i16)
+- [x] Smaller `RasterTypes` give a slowdown (i32, i16)
   - Fixed once I cleaned up inefficiencies in the rasterizer
+- [x] Rasterizer benchmarks are not reproducible, vary like crazy
+  - Seems to be fixed once I fixed the seed in the generators
 
 ## Housekeeping
 - [ ] Add LICENSE

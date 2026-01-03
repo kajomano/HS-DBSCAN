@@ -211,7 +211,7 @@ criterion_main!(benches);
 
 // rast_init_1_uniformbox/100    time:   [2.8790 µs 2.9260 µs 2.9690 µs]
 // rast_init_1_uniformbox/1000   time:   [16.550 µs 16.575 µs 16.603 µs]
-// rast_init_1_uniformbox/10000  time:   [150.90 µs 151.08 µs 151.28 µs]
+// rast_init_1_uniformbox/10000  time:   [215.03 µs 216.36 µs 217.75 µs]
 
 // prox_init_L2_uniformbox/100   time:   [13.791 µs 13.802 µs 13.813 µs]
 // prox_init_L2_uniformbox/1000  time:   [1.4627 ms 1.4645 ms 1.4664 ms]

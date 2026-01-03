@@ -54,7 +54,7 @@ pub mod test {
 
     impl TestDefault for NormConfig {
         fn test_default() -> Self {
-            Self::L2
+            Self::L2Squared
         }
     }
 }

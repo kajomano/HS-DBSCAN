@@ -1,6 +1,6 @@
 use crate::types::{FloatMatrixType, FloatType};
 use nalgebra::stack;
-use rand::{Rng, rng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use rand_distr::{Distribution, Normal};
 use std::fmt::{Display, Formatter, Result};
 
@@ -19,7 +19,8 @@ impl<const NCOLS: usize> Generate<NCOLS> for UniformBox<NCOLS> {
     fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS> {
         assert!(self.size > 0.0);
 
-        let mut rng = rng();
+        let mut rng = StdRng::from_seed([1; 32]);
+
         FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, col| {
             rng.random_range(
                 (self.center[col] - (self.size / 2.0))..(self.center[col] + (self.size / 2.0)),
@@ -44,7 +45,8 @@ impl<const NCOLS: usize> Generate<NCOLS> for UniformSphere<NCOLS> {
     fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS> {
         assert!(self.radius > 0.0);
 
-        let mut rng = rng();
+        let mut rng = StdRng::from_seed([2; 32]);
+
         let normal_dist = Normal::new(0.0, 1.0).unwrap();
         let mut points =
             FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, _| normal_dist.sample(&mut rng));

@@ -175,9 +175,9 @@ criterion_main!(benches);
 // =====================================================================================================================
 
 // f64
-// rast_init_1_uniformbox/100    time:   [8.0432 µs 8.0551 µs 8.0671 µs]
-// rast_init_1_uniformbox/1000   time:   [51.118 µs 51.230 µs 51.336 µs]
-// rast_init_1_uniformbox/10000  time:   [485.45 µs 486.76 µs 488.00 µs]
+// rast_init_1_uniformbox/100    time:   [5.8178 µs 5.8258 µs 5.8340 µs]
+// rast_init_1_uniformbox/1000   time:   [40.630 µs 40.714 µs 40.801 µs]
+// rast_init_1_uniformbox/10000  time:   [391.59 µs 392.91 µs 394.23 µs]
 
 // prox_init_L2_uniformbox/100   time:   [13.791 µs 13.802 µs 13.813 µs]
 // prox_init_L2_uniformbox/1000  time:   [1.4627 ms 1.4645 ms 1.4664 ms]

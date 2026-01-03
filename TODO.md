@@ -49,14 +49,17 @@
   - [x] Add unit test
 - [ ] Rasterization
   - [x] Mapping
-  - [x] Unit tests
+  - [ ] Unit tests
+    - [ ] Mapper unit test
   - [ ] Benchmarks
   - [ ] Try to tune it
-    - [ ] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
-      - [ ] [https://github.com/ogxd/gxhash]
+    - [x] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
+      - [x] [https://github.com/ogxd/gxhash]
+        - not portable
       - [x] [https://github.com/hoxxep/rapidhash]
         - Small (~10%) improvement
-      - [ ] Something manual and super simple
+      - [x] [https://github.com/paritytech/nohash-hasher]
+        - too limiting
   - [ ] I know NCOLS at compile time, should not need to collect into `Vec` -> Try a macro
   - [ ] Centroids could also be stored
 

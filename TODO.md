@@ -68,9 +68,10 @@
   - [x] I know NCOLS at compile time, should not need to collect into `Vec`
     - epic ~50% speedup once fixed!
   - [x] Centroids could also be stored
-    - small (~5%) speedup
+    - causes slowdown
 
 - [ ] e2e benchmarks
+  - [ ] More data distributions!
 
 - [ ] Plots
 

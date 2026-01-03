@@ -2,6 +2,15 @@
 //! ```
 //! cargo bench
 //! ```
+//! Filter for the specific category name with:
+//! ```
+//! cargo bench [category]
+//! ```
+//! Available categories:
+//! - rast
+//! - prox
+//! - dbscan
+//! - e2e
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use hs_dbscan::{
@@ -10,9 +19,8 @@ use hs_dbscan::{
     generate::{Generate, UniformBox},
     proximity::{MatrixProximity, Proximity},
     rasterizer::Rasterizer,
-    types::{FloatType, IndexType, IndexVectorType},
+    types::{FloatType, IndexVectorType},
 };
-use nalgebra::{Dyn, OVector};
 use std::{hint::black_box, time::Duration};
 
 fn benchmark_rasterizer_init(
@@ -154,12 +162,9 @@ fn benchmark_dbscan(config: &HsDbscanConfig, generator: &impl Generate<2>, c: &m
     group.finish();
 }
 
-fn benchmark_proximity(c: &mut Criterion) {
+fn benchmarks(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
-    let generator = UniformBox {
-        center: [5.0, 5.0],
-        size: 5.0,
-    };
+    let generator = UniformBox::test_default();
 
     // Rasterizer
     benchmark_rasterizer_init(config.raster_res.unwrap(), &generator, c);
@@ -173,7 +178,7 @@ fn benchmark_proximity(c: &mut Criterion) {
     benchmark_dbscan(&config, &generator, c);
 }
 
-criterion_group!(benches, benchmark_proximity);
+criterion_group!(benches, benchmarks);
 criterion_main!(benches);
 
 // =====================================================================================================================

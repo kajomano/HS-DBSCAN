@@ -1,6 +1,6 @@
 use crate::types::{FloatMatrixType, FloatType, IndexType, IndexVectorType, RasterType};
 use indexmap::IndexMap;
-use nalgebra::{Const, Dyn, Matrix, OMatrix, OVector};
+use nalgebra::{Const, Dyn, OMatrix, OVector};
 use rapidhash::fast;
 
 pub struct Rasterizer<const NCOLS: usize> {
@@ -19,7 +19,6 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
                 fast::GlobalState::default(),
             );
         let mut mapping = OVector::<IndexType, Dyn>::zeros(input.nrows());
-        let mut centroids = Vec::<Matrix<FloatType, Const<1>, Const<NCOLS>, _>>::new();
 
         // Bin the points
         let mut binned_float = input / raster_res;
@@ -44,23 +43,23 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
             }
 
             // Insert value into the mapping if new, and increase count
-            let val = entry.or_insert_with(|| {
-                // If new, store the centroid too
-                // NOTE: if this would need to be super precise, the centroids would need to be shifted by the half of
-                // raster_res in every dimension, because the "binned_float" coordinates represent the "lower left"
-                // corners of each bin. However, this would result in a translation of the whole coordinate system,
-                // which does not affect the distance calculations, so it can be omitted.
-                centroids.push(binned_float.row(idx));
-
-                0
-            });
+            let val = entry.or_insert_with(|| 0);
             *val += 1;
         }
 
         Self {
             mapping,
-            centroids: FloatMatrixType::<NCOLS>::from_rows(&centroids),
-            weights: OVector::<IndexType, Dyn>::from_iterator(
+            // NOTE: if this would need to be super precise, the centroids would need to be shifted by the half of
+            // raster_res in every dimension, because the "binned_float" coordinates represent the "lower left"
+            // corners of each bin. However, this would result in a translation of the whole coordinate system,
+            // which does not affect the distance calculations, so it can be omitted.
+            centroids: FloatMatrixType::from_row_slice(
+                &bin_map
+                    .keys()
+                    .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res))
+                    .collect::<Vec<_>>(),
+            ),
+            weights: IndexVectorType::from_iterator(
                 bin_map.len(),
                 bin_map.values().map(|&val| val),
             ),

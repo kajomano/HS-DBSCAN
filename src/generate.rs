@@ -59,8 +59,17 @@ impl<const NCOLS: usize> Display for UniformSphere<NCOLS> {
 }
 
 pub(crate) mod test {
-    use crate::types::{FloatMatrixType, FloatType};
+    use crate::{config::test::TestDefault, generate::UniformBox, types::{FloatMatrixType, FloatType}};
     use nalgebra::{Const, RowVector};
+
+    impl<const NCOLS: usize> TestDefault for UniformBox<NCOLS> {
+        fn test_default() -> Self {
+            UniformBox {
+                center: [5.0; NCOLS],
+                size: 5.0,
+            }
+        }
+    }
 
     /// Dataset generator function commonly used in unit tests.
     ///

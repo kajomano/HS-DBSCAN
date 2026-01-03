@@ -72,8 +72,6 @@ pub trait Proximity {
     fn len(&self) -> usize;
 }
 
-// TODO: KD-tree
-
 /// RAII struct for handling proximity by precalculating every distance between point pairs.
 pub struct MatrixProximity {
     proximities: OMatrix<IndexType, Dyn, Dyn>,
@@ -150,7 +148,7 @@ impl MatrixProximity {
 
         // Set weights
         for mut proximities_col in proximities.column_iter_mut() {
-            proximities_col.component_mul_assign(&weights)
+            proximities_col.component_mul_assign(weights)
         }
 
         proximities

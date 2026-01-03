@@ -77,7 +77,8 @@
 
 - [ ] Try converting to column-major-friendly layout for speed?
 
-- [ ] Clippy
+- [x] Clippy
+- [ ] Docs
 
 ## Issues
 - [x] Norm variants don't change the performance

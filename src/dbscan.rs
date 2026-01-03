@@ -43,10 +43,10 @@ impl Dbscan {
 
         for idx in 0..self.states.len() {
             unsafe {
-                if !self.states.get_unchecked(idx).assigned {
-                    if self.expand_cluster(prox, idx, cluster_id) {
-                        cluster_id += 1;
-                    }
+                if !self.states.get_unchecked(idx).assigned
+                    && self.expand_cluster(prox, idx, cluster_id)
+                {
+                    cluster_id += 1;
                 }
             }
         }

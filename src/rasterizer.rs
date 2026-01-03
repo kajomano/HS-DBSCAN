@@ -59,10 +59,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
                     .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res))
                     .collect::<Vec<_>>(),
             ),
-            weights: IndexVectorType::from_iterator(
-                bin_map.len(),
-                bin_map.values().map(|&val| val),
-            ),
+            weights: IndexVectorType::from_iterator(bin_map.len(), bin_map.values().copied()),
         }
     }
 

@@ -170,7 +170,7 @@ impl Proximity for MatrixProximity {
 #[cfg(test)]
 mod test {
     use crate::{
-        config::TestDefault,
+        config::test::TestDefault,
         generate::test::generate_2_point_dataset,
         proximity::{
             L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,

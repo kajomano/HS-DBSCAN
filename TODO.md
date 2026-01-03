@@ -51,8 +51,8 @@
   - [x] Mapper
   - [x] Unit tests
     - [x] Mapper unit test
-  - [] Benchmarks
-    - [ ] Mapper benchmark
+  - [x] Benchmarks
+    - [x] Mapper benchmark
   - [x] Try to tune it
     - [x] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
       - [x] [https://github.com/ogxd/gxhash]

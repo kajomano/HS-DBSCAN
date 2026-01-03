@@ -25,32 +25,36 @@ pub enum NormConfig {
     Linf,
 }
 
-/// Trait to define default configuration used in unit tests and benchmarks
-pub trait TestDefault {
-    fn test_default() -> Self;
-}
+pub mod test {
+    use crate::config::{HsDbscanConfig, NormConfig, ProximityConfig};
 
-impl TestDefault for HsDbscanConfig {
-    fn test_default() -> Self {
-        Self {
-            raster_res: Some(1.0),
-            proximity: TestDefault::test_default(),
-            min_pts: 10,
+    /// Trait to define default configuration used in unit tests and benchmarks
+    pub trait TestDefault {
+        fn test_default() -> Self;
+    }
+
+    impl TestDefault for HsDbscanConfig {
+        fn test_default() -> Self {
+            Self {
+                raster_res: Some(1.0),
+                proximity: TestDefault::test_default(),
+                min_pts: 10,
+            }
         }
     }
-}
 
-impl TestDefault for ProximityConfig {
-    fn test_default() -> Self {
-        Self {
-            eps: 3.0,
-            norm: TestDefault::test_default(),
+    impl TestDefault for ProximityConfig {
+        fn test_default() -> Self {
+            Self {
+                eps: 3.0,
+                norm: TestDefault::test_default(),
+            }
         }
     }
-}
 
-impl TestDefault for NormConfig {
-    fn test_default() -> Self {
-        Self::L2
+    impl TestDefault for NormConfig {
+        fn test_default() -> Self {
+            Self::L2
+        }
     }
 }

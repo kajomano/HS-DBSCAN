@@ -6,7 +6,7 @@
 // https://github.com/savish/dbscan
 
 use hs_dbscan::{
-    config::{HsDbscanConfig, TestDefault},
+    config::{HsDbscanConfig, test::TestDefault},
     generate::{Generate, UniformBox},
     hs_dbscan,
 };

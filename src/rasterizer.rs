@@ -1,7 +1,7 @@
 use crate::types::{FloatMatrixType, FloatType, IndexType, IndexVectorType, RasterType};
 use indexmap::IndexMap;
-use nalgebra::{Dyn, OVector};
-use rapidhash::fast::GlobalState;
+use nalgebra::{Const, Dyn, Matrix, OMatrix, OVector};
+use rapidhash::fast;
 
 pub struct Rasterizer<const NCOLS: usize> {
     mapping: IndexVectorType,
@@ -15,51 +15,55 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
         assert!(raster_res > 0.0);
 
         let mut bin_map =
-            IndexMap::<Vec<RasterType>, IndexType, GlobalState>::with_hasher(GlobalState::new());
-        // // NOTE: centroids could be re-calculated from the bin_map keys
-        // let mut centroids = Vec::<&Matrix<FloatType, Const<1>, Const<NCOLS>, _>>::new();
+            IndexMap::<[RasterType; NCOLS], IndexType, fast::GlobalState>::with_hasher(
+                fast::GlobalState::default(),
+            );
         let mut mapping = OVector::<IndexType, Dyn>::zeros(input.nrows());
+        let mut centroids = Vec::<Matrix<FloatType, Const<1>, Const<NCOLS>, _>>::new();
 
         // Bin the points
-        let mut binned = input / raster_res;
-        binned.iter_mut().for_each(|val| *val = val.floor());
+        let mut binned_float = input / raster_res;
+        binned_float.iter_mut().for_each(|val| *val = val.floor());
+
+        // NOTE: need to be transposed so that when accessing columns (rows in the original layout), the memory is
+        // contiguous
+        let binned = OMatrix::<RasterType, Dyn, Const<NCOLS>>::from_iterator(
+            binned_float.nrows(),
+            binned_float.iter().map(|&val| val as RasterType),
+        )
+        .transpose();
 
         // Iterate over the binned points and assign them to bins
-        for (idx, bin) in binned.row_iter().enumerate() {
-            let entry = bin_map.entry(bin.iter().map(|&val| val as RasterType).collect());
+        for (idx, bin) in binned.column_iter().enumerate() {
+            // NOTE: NCOLS makes sure this will never panic
+            let entry = bin_map.entry(bin.as_slice().try_into().unwrap());
 
             // Store the centroid ID in the mapping
             unsafe {
                 *mapping.get_unchecked_mut(idx) = entry.index() as IndexType;
             }
 
-            // Insert value if new, and increase count
-            let val = entry.or_insert(0);
+            // Insert value into the mapping if new, and increase count
+            let val = entry.or_insert_with(|| {
+                // If new, store the centroid too
+                // NOTE: if this would need to be super precise, the centroids would need to be shifted by the half of
+                // raster_res in every dimension, because the "binned_float" coordinates represent the "lower left"
+                // corners of each bin. However, this would result in a translation of the whole coordinate system,
+                // which does not affect the distance calculations, so it can be omitted.
+                centroids.push(binned_float.row(idx));
+
+                0
+            });
             *val += 1;
-
-            // // If new entry, store the centroid
-            // if new_entry {
-            //     centroids.push(&row);
-            // }
         }
-
-        // Create the centroids matrix and weights vector
-        let centroids = FloatMatrixType::<NCOLS>::from_row_slice(
-            &bin_map
-                .keys()
-                .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res))
-                .collect::<Vec<_>>(),
-        );
-
-        let weights = OVector::<IndexType, Dyn>::from_iterator(
-            bin_map.len(),
-            bin_map.values().map(|&val| val),
-        );
 
         Self {
             mapping,
-            centroids,
-            weights,
+            centroids: FloatMatrixType::<NCOLS>::from_rows(&centroids),
+            weights: OVector::<IndexType, Dyn>::from_iterator(
+                bin_map.len(),
+                bin_map.values().map(|&val| val),
+            ),
         }
     }
 

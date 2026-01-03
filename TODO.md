@@ -5,7 +5,7 @@
 - [ ] Write python bindings
 - Extend with:
   - [x] Other norms
-  - [ ] Rasterization
+  - [x] Rasterization
   - [ ] KD-tree
 
 
@@ -33,8 +33,8 @@
 
 - [x] Fix mut borrow and update dbscan unit test
 
-- [ ] Add DBSCAN benchmarks
-  - [ ] Add more data distributions
+- [x] Add DBSCAN benchmarks
+  - [x] ~~Add more data distributions~~ -> e2e benchmarks will handle it
   - [x] Try to tune
     - Bool seed lookup is better than `Hashset`
     - AoS is better than SoA for dbscan internal state
@@ -47,28 +47,34 @@
 
 - [x] Handle weighted points
   - [x] Add unit test
-- [ ] Rasterization
+- [x] Rasterization
   - [x] Mapping
   - [x] Unit tests
     - [x] Mapper unit test
-  - [x] Benchmarks
-  - [ ] Try to tune it
+  - [] Benchmarks
+    - [ ] Mapping benchmark
+  - [x] Try to tune it
     - [x] Try to change [hashing func](https://www.reddit.com/r/rust/comments/1eqhe9a/blog_i_compared_14_hashing_algorithms_on_rust/):
       - [x] [https://github.com/ogxd/gxhash]
         - not portable
-      - [x] [https://github.com/hoxxep/rapidhash]
+      - -> [x] [https://github.com/hoxxep/rapidhash]
         - Small (~10%) improvement
       - [x] [https://github.com/paritytech/nohash-hasher]
         - too limiting
       - [x] [https://github.com/tkaitchuck/aHash]
         - no improvement over rapidhash
-    - [ ] Try a radix sort instead of hashing
-  - [ ] I know NCOLS at compile time, should not need to collect into `Vec` -> Try a macro
-  - [ ] Centroids could also be stored
+    - [x] Try a radix sort instead of hashing
+      - Much slower, stopped trying
+  - [x] I know NCOLS at compile time, should not need to collect into `Vec`
+    - epic ~50% speedup once fixed!
+  - [x] Centroids could also be stored
+    - small (~5%) speedup
 
-- [ ] Try converting to column-major-friendly layout for speed?
+- [ ] e2e benchmarks
 
 - [ ] Plots
+
+- [ ] Try converting to column-major-friendly layout for speed?
 
 - [ ] Clippy
 

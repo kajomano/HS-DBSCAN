@@ -1,7 +1,7 @@
 ## High-level
 - [x] Write dumb implementation
 - [x] Write unit tests
-- [ ] Write benchmarks
+- [x] Write benchmarks
 - [ ] Write plotting
 - Extend with:
   - [x] Other norms
@@ -70,8 +70,8 @@
   - [x] Centroids could also be stored
     - causes slowdown
 
-- [ ] e2e benchmarks
-  - [ ] More data distributions!
+- [x] e2e benchmarks
+  - [x] More data distributions!
 
 - [ ] Plots
 

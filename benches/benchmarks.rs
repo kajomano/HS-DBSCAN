@@ -132,7 +132,7 @@ fn benchmark_proximity(c: &mut Criterion) {
 
     // Rasterizer
     benchmark_rasterizer_init(
-        config.raster_res,
+        config.raster_res.unwrap(),
         &UniformBox {
             center: [5.0, 5.0],
             size: 5.0,

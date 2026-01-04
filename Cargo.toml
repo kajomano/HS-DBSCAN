@@ -17,6 +17,7 @@ rapidhash = "4.2.0"
 serde = "1.0.228"
 serde_json = "1.0.148"
 eyre = "0.6.12"
+dataviz = "0.1.9"
 
 [[bench]]
 name = "benchmarks"

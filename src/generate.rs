@@ -138,7 +138,7 @@ pub(crate) mod test {
     impl<const NCOLS: usize> TestDefault for UniformBox<NCOLS> {
         fn test_default() -> Self {
             UniformBox {
-                center: [0.0; NCOLS],
+                center: [5.0; NCOLS],
                 size: 5.0,
             }
         }
@@ -147,7 +147,7 @@ pub(crate) mod test {
     impl<const NCOLS: usize> TestDefault for UniformSphere<NCOLS> {
         fn test_default() -> Self {
             UniformSphere {
-                center: [0.0; NCOLS],
+                center: [5.0; NCOLS],
                 radius: 0.1,
             }
         }
@@ -156,7 +156,7 @@ pub(crate) mod test {
     impl<const NCOLS: usize> TestDefault for TwoUniformSpheres<NCOLS> {
         fn test_default() -> Self {
             TwoUniformSpheres {
-                center: [0.0; NCOLS],
+                center: [5.0; NCOLS],
                 size: 5.0,
                 offset: 2.0,
                 radius: 1.0,

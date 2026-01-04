@@ -74,6 +74,7 @@
   - [x] More data distributions!
 
 - [ ] Plots
+  - [ ] Moar plots
 
 - [ ] Try converting to column-major-friendly layout for speed
   - [ ] Rename NCOLS to NDIMS
@@ -89,6 +90,7 @@
 - [x] Smaller `RasterTypes` give a slowdown (i32, i16)
   - Fixed once I cleaned up inefficiencies in the rasterizer
 - [ ] Rasterizer benchmarks are not reproducible, vary like crazy
+- [ ] Something doesn't work when rasterizing, visible on plots
 
 ## Housekeeping
 - [ ] Add LICENSE

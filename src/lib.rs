@@ -5,6 +5,7 @@ use crate::{
     rasterizer::Rasterizer,
     types::{FloatMatrixType, IndexType, IndexVectorType},
 };
+use eyre::Result;
 use nalgebra::{Dyn, OVector};
 
 pub mod config;
@@ -18,14 +19,14 @@ pub mod types;
 pub fn hs_dbscan<const NCOLS: usize>(
     input: &FloatMatrixType<NCOLS>,
     config: &HsDbscanConfig,
-) -> IndexVectorType {
+) -> Result<IndexVectorType> {
     if let Some(raster_res) = config.raster_res {
         // Rasterize the input
-        let rasterizer = Rasterizer::new(input, raster_res);
+        let rasterizer = Rasterizer::new(input, raster_res)?;
         let (input, weights) = rasterizer.rasterize();
 
         // Create a proximity calculator
-        let prox = MatrixProximity::new(input, weights, &config.proximity);
+        let prox = MatrixProximity::new(input, weights, &config.proximity)?;
 
         // Run dbscan and map the cluster IDs back to the original input points
         rasterizer.map_back(&dbscan(&prox, config.min_pts))
@@ -35,9 +36,9 @@ pub fn hs_dbscan<const NCOLS: usize>(
             input,
             &OVector::<IndexType, Dyn>::repeat(input.nrows(), 1),
             &config.proximity,
-        );
+        )?;
 
         // Run dbscan
-        dbscan(&prox, config.min_pts)
+        Ok(dbscan(&prox, config.min_pts))
     }
 }

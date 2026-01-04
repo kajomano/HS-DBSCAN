@@ -1,0 +1,8 @@
+{
+	"raster_res": 1.0,
+	"proximity": {
+		"eps": 3.0,
+		"norm": "L2Squared"
+	},
+	"min_pts": 10
+}

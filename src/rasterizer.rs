@@ -1,4 +1,5 @@
 use crate::types::{FloatMatrixType, FloatType, IndexType, IndexVectorType, RasterType};
+use eyre::{Result, ensure};
 use indexmap::IndexMap;
 use nalgebra::{Const, Dyn, OMatrix, OVector};
 use rapidhash::fast;
@@ -10,9 +11,9 @@ pub struct Rasterizer<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Rasterizer<NCOLS> {
-    pub fn new(input: &FloatMatrixType<NCOLS>, raster_res: FloatType) -> Self {
-        assert!(input.nrows() <= IndexType::MAX as usize);
-        assert!(raster_res > 0.0);
+    pub fn new(input: &FloatMatrixType<NCOLS>, raster_res: FloatType) -> Result<Self> {
+        ensure!(input.nrows() <= IndexType::MAX as usize);
+        ensure!(raster_res > 0.0);
 
         let mut bin_map =
             IndexMap::<[RasterType; NCOLS], IndexType, fast::GlobalState>::with_hasher(
@@ -34,7 +35,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
 
         // Iterate over the binned points and assign them to bins
         for (idx, bin) in binned.column_iter().enumerate() {
-            // NOTE: NCOLS makes sure this will never panic
+            // SAFETY: NCOLS makes sure this will never panic
             let entry = bin_map.entry(bin.as_slice().try_into().unwrap());
 
             // Store the centroid ID in the mapping
@@ -47,7 +48,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
             *val += 1;
         }
 
-        Self {
+        Ok(Self {
             mapping,
             // NOTE: if this would need to be super precise, the centroids would need to be shifted by the half of
             // raster_res in every dimension, because the "binned_float" coordinates represent the "lower left"
@@ -60,15 +61,15 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
                     .collect::<Vec<_>>(),
             ),
             weights: IndexVectorType::from_iterator(bin_map.len(), bin_map.values().copied()),
-        }
+        })
     }
 
     pub fn rasterize(&self) -> (&FloatMatrixType<NCOLS>, &IndexVectorType) {
         (&self.centroids, &self.weights)
     }
 
-    pub fn map_back(&self, cluster_ids: &IndexVectorType) -> IndexVectorType {
-        assert!(self.centroids.nrows() == cluster_ids.nrows());
+    pub fn map_back(&self, cluster_ids: &IndexVectorType) -> Result<IndexVectorType> {
+        ensure!(self.centroids.nrows() == cluster_ids.nrows());
 
         let mut mapped_ids = OVector::<IndexType, Dyn>::zeros(self.mapping.nrows());
 
@@ -78,7 +79,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
             }
         }
 
-        mapped_ids
+        Ok(mapped_ids)
     }
 }
 
@@ -105,7 +106,9 @@ mod test {
         #[case] expected: [FloatType; 2],
     ) {
         assert_relative_eq!(
-            Rasterizer::new(&FloatMatrixType::<2>::from_row_slice(&input), raster_res).centroids,
+            Rasterizer::new(&FloatMatrixType::<2>::from_row_slice(&input), raster_res)
+                .unwrap()
+                .centroids,
             &FloatMatrixType::from_row_slice(&expected),
             epsilon = FloatType::EPSILON
         );
@@ -129,7 +132,8 @@ mod test {
         let rasterizer = Rasterizer::new(
             &generate_2_point_dataset(point_1, n_1, point_2, n_2),
             raster_res,
-        );
+        )
+        .unwrap();
         let (centroids, weights) = rasterizer.rasterize();
 
         assert_relative_eq!(
@@ -157,9 +161,12 @@ mod test {
         let rasterizer = Rasterizer::new(
             &generate_2_point_dataset([0.0, 0.0], n_1, point_2, n_2),
             1.0,
-        );
+        )
+        .unwrap();
 
-        let mapped_ids = rasterizer.map_back(&IndexVectorType::from_column_slice(cluster_ids));
+        let mapped_ids = rasterizer
+            .map_back(&IndexVectorType::from_column_slice(cluster_ids))
+            .unwrap();
         let expected_ids = IndexVectorType::from_column_slice(expected);
 
         assert_eq!(mapped_ids, expected_ids)
@@ -168,13 +175,13 @@ mod test {
     #[test]
     #[should_panic]
     fn test_rasterizer_invalid_res() {
-        Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 0.0);
+        Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 0.0).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_rasterizer_invalid_map_input() {
-        let rasterizer = Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 1.0);
-        rasterizer.map_back(&IndexVectorType::zeros(2));
+        let rasterizer = Rasterizer::new(&FloatMatrixType::<2>::zeros(1), 1.0).unwrap();
+        rasterizer.map_back(&IndexVectorType::zeros(2)).unwrap();
     }
 }

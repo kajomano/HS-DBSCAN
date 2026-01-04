@@ -2,6 +2,7 @@ use crate::{
     config::{NormConfig, ProximityConfig},
     types::{FloatMatrixType, FloatType, IndexType},
 };
+use eyre::{Result, ensure};
 use nalgebra::{
     Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, Vector, VectorView,
 };
@@ -66,7 +67,9 @@ impl Norm for LinfNorm {
 pub trait Proximity {
     /// Returns a vector of weights where a weight > 0 means the point is within proximity of the
     /// query point. The query point is referenced by index.
-    fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn>;
+    ///
+    /// SAFETY: marked unsafe because a query_idx larger than the stored points can cause a panic.
+    unsafe fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn>;
 
     /// Returns the number of points stored.
     fn len(&self) -> usize;
@@ -82,10 +85,10 @@ impl MatrixProximity {
         input: &FloatMatrixType<NCOLS>,
         weights: &Vector<IndexType, Dyn, S>,
         config: &ProximityConfig,
-    ) -> Self {
-        assert!(input.nrows() <= IndexType::MAX as usize);
-        assert!(input.nrows() == weights.nrows());
-        assert!(config.eps >= 0.0);
+    ) -> Result<Self> {
+        ensure!(input.nrows() <= IndexType::MAX as usize);
+        ensure!(input.nrows() == weights.nrows());
+        ensure!(config.eps >= 0.0);
 
         let proximities = match config.norm {
             NormConfig::L1 => Self::pairwise_proximities(input, weights, L1Norm, config.eps),
@@ -96,7 +99,7 @@ impl MatrixProximity {
             NormConfig::Linf => Self::pairwise_proximities(input, weights, LinfNorm, config.eps),
         };
 
-        Self { proximities }
+        Ok(Self { proximities })
     }
 
     /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
@@ -156,7 +159,7 @@ impl MatrixProximity {
 }
 
 impl Proximity for MatrixProximity {
-    fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
+    unsafe fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
         self.proximities.column(query_idx)
     }
 
@@ -225,7 +228,8 @@ mod test {
             &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::repeat(2, 1),
             &ProximityConfig { eps, norm },
-        );
+        )
+        .unwrap();
 
         let expected =
             OMatrix::<IndexType, Dyn, Dyn>::from_column_slice(2, 2, &[1, expected, expected, 1]);
@@ -249,7 +253,8 @@ mod test {
             &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::from_column_slice(&[weight_1, weight_2]),
             &ProximityConfig::test_default(),
-        );
+        )
+        .unwrap();
 
         let expected = OMatrix::<IndexType, Dyn, Dyn>::from_column_slice(2, 2, &expected);
 
@@ -265,7 +270,8 @@ mod test {
             &FloatMatrixType::<2>::zeros(n),
             &OVector::<IndexType, Dyn>::repeat(n, 1),
             &ProximityConfig::test_default(),
-        );
+        )
+        .unwrap();
 
         assert_eq!(prox.proximities.shape(), (n, n))
     }
@@ -277,7 +283,8 @@ mod test {
             &FloatMatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(3, 1),
             &ProximityConfig::test_default(),
-        );
+        )
+        .unwrap();
     }
 
     #[test]
@@ -290,6 +297,7 @@ mod test {
                 eps: -1.0,
                 norm: NormConfig::test_default(),
             },
-        );
+        )
+        .unwrap();
     }
 }

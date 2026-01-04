@@ -75,9 +75,12 @@
 
 - [ ] Plots
 
-- [ ] Try converting to column-major-friendly layout for speed?
+- [ ] Try converting to column-major-friendly layout for speed
+  - [ ] Rename NCOLS to NDIMS
+- [ ] Generic proximity, use integers directly from the rasterizer
 
 - [x] Clippy
+- [x] Error handling
 - [ ] Docs
 
 ## Issues
@@ -85,8 +88,7 @@
   - not sure what it was, now they change significantly
 - [x] Smaller `RasterTypes` give a slowdown (i32, i16)
   - Fixed once I cleaned up inefficiencies in the rasterizer
-- [x] Rasterizer benchmarks are not reproducible, vary like crazy
-  - Seems to be fixed once I fixed the seed in the generators
+- [ ] Rasterizer benchmarks are not reproducible, vary like crazy
 
 ## Housekeeping
 - [ ] Add LICENSE

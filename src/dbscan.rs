@@ -59,45 +59,44 @@ impl Dbscan {
         idx: usize,
         cluster_id: IndexType,
     ) -> bool {
-        let prox_query = prox.query(idx);
-        for (state, &weight) in self.states.iter_mut().zip(prox_query.iter()) {
-            state.seed = weight > 0;
-        }
-
-        // Not a core point
-        if prox_query.sum() < self.min_pts {
-            self.set_cluster_ids_on_seeds(0);
-            return false;
-        }
-
-        // Core point: all seeds are density reachable
-        self.set_cluster_ids_on_seeds(cluster_id);
         unsafe {
-            self.states.get_unchecked_mut(idx).seed = false;
-        }
-
-        // Iterate over seeds, and add anythinig within their vicinity to the cluster. If the seed is a core point too,
-        // add points reachable from it to seeds.
-        while let Some(idx) = self
-            .states
-            .iter()
-            .filter_map(|state| {
-                if state.seed {
-                    Some(state.idx as usize)
-                } else {
-                    None
-                }
-            })
-            .next()
-        {
             let prox_query = prox.query(idx);
-            if prox_query.sum() >= self.min_pts {
-                for idx in prox_query
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(idx, &weight)| if weight > 0 { Some(idx) } else { None })
-                {
-                    unsafe {
+
+            for (state, &weight) in self.states.iter_mut().zip(prox_query.iter()) {
+                state.seed = weight > 0;
+            }
+
+            // Not a core point
+            if prox_query.sum() < self.min_pts {
+                self.set_cluster_ids_on_seeds(0);
+                return false;
+            }
+
+            // Core point: all seeds are density reachable
+            self.set_cluster_ids_on_seeds(cluster_id);
+            self.states.get_unchecked_mut(idx).seed = false;
+
+            // Iterate over seeds, and add anythinig within their vicinity to the cluster. If the seed is a core point too,
+            // add points reachable from it to seeds.
+            while let Some(idx) = self
+                .states
+                .iter()
+                .filter_map(|state| {
+                    if state.seed {
+                        Some(state.idx as usize)
+                    } else {
+                        None
+                    }
+                })
+                .next()
+            {
+                let prox_query = prox.query(idx);
+                if prox_query.sum() >= self.min_pts {
+                    for idx in prox_query
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(idx, &weight)| if weight > 0 { Some(idx) } else { None })
+                    {
                         let state = self.states.get_unchecked_mut(idx);
 
                         if !state.assigned {
@@ -109,14 +108,12 @@ impl Dbscan {
                         }
                     }
                 }
-            }
 
-            unsafe {
                 self.states.get_unchecked_mut(idx).seed = false;
             }
-        }
 
-        true
+            true
+        }
     }
 
     // TODO: docstring
@@ -171,7 +168,7 @@ mod test {
     }
 
     impl Proximity for TestProximity {
-        fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
+        unsafe fn query<'a>(&'a self, query_idx: usize) -> VectorView<'a, IndexType, Dyn> {
             if query_idx < self.n_1 {
                 self.query_1.column(0)
             } else {

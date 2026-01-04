@@ -1,12 +1,13 @@
 use crate::types::{FloatMatrixType, FloatType};
+use eyre::{Result, ensure};
 use nalgebra::stack;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use rand_distr::{Distribution, Normal};
-use std::fmt::{Display, Formatter, Result};
+use std::fmt::{Display, Formatter};
 
 pub trait Generate<const NCOLS: usize>: Display {
     /// Generate a set of points according to the given distribution.
-    fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS>;
+    fn generate(&self, n_pts: usize) -> Result<FloatMatrixType<NCOLS>>;
 }
 
 /// Uniform distribution in the range `[center-size, center+size]`.
@@ -16,21 +17,21 @@ pub struct UniformBox<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Generate<NCOLS> for UniformBox<NCOLS> {
-    fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS> {
-        assert!(self.size > 0.0);
+    fn generate(&self, n_pts: usize) -> Result<FloatMatrixType<NCOLS>> {
+        ensure!(self.size > 0.0);
 
         let mut rng = StdRng::from_seed([1; 32]);
 
-        FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, col| {
+        Ok(FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, col| {
             rng.random_range(
                 (self.center[col] - (self.size / 2.0))..(self.center[col] + (self.size / 2.0)),
             )
-        })
+        }))
     }
 }
 
 impl<const NCOLS: usize> Display for UniformBox<NCOLS> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "uniformbox")
     }
 }
@@ -42,11 +43,12 @@ pub struct UniformSphere<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Generate<NCOLS> for UniformSphere<NCOLS> {
-    fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS> {
-        assert!(self.radius > 0.0);
+    fn generate(&self, n_pts: usize) -> Result<FloatMatrixType<NCOLS>> {
+        ensure!(self.radius > 0.0);
 
         let mut rng = StdRng::from_seed([2; 32]);
 
+        // SAFETY: because of the hardcoded std_dev, this will never panic
         let normal_dist = Normal::new(0.0, 1.0).unwrap();
         let mut points =
             FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, _| normal_dist.sample(&mut rng));
@@ -57,12 +59,12 @@ impl<const NCOLS: usize> Generate<NCOLS> for UniformSphere<NCOLS> {
             row *= row.norm() * u;
         });
 
-        points
+        Ok(points)
     }
 }
 
 impl<const NCOLS: usize> Display for UniformSphere<NCOLS> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "uniformsphere")
     }
 }
@@ -76,8 +78,8 @@ pub struct TwoUniformSpheres<const NCOLS: usize> {
 }
 
 impl<const NCOLS: usize> Generate<NCOLS> for TwoUniformSpheres<NCOLS> {
-    fn generate(&self, n_pts: usize) -> FloatMatrixType<NCOLS> {
-        assert!(self.noise_ratio >= 0.0 && self.noise_ratio <= 1.0);
+    fn generate(&self, n_pts: usize) -> Result<FloatMatrixType<NCOLS>> {
+        ensure!(self.noise_ratio >= 0.0 && self.noise_ratio <= 1.0);
 
         let n_noise = ((n_pts as f64) * self.noise_ratio) as usize;
         let n_sphere = (n_pts - n_noise) / 2;
@@ -88,6 +90,7 @@ impl<const NCOLS: usize> Generate<NCOLS> for TwoUniformSpheres<NCOLS> {
         };
 
         let sphere_1 = UniformSphere::<NCOLS> {
+            // SAFETY: NCOLS makes sure this will never panic
             center: self
                 .center
                 .iter()
@@ -99,6 +102,7 @@ impl<const NCOLS: usize> Generate<NCOLS> for TwoUniformSpheres<NCOLS> {
         };
 
         let sphere_2 = UniformSphere::<NCOLS> {
+            // SAFETY: NCOLS makes sure this will never panic
             center: self
                 .center
                 .iter()
@@ -109,16 +113,16 @@ impl<const NCOLS: usize> Generate<NCOLS> for TwoUniformSpheres<NCOLS> {
             radius: self.radius,
         };
 
-        stack!(
-            noise.generate(n_noise);
-            sphere_1.generate(n_sphere);
-            sphere_2.generate(n_sphere);
-        )
+        Ok(stack!(
+            noise.generate(n_noise)?;
+            sphere_1.generate(n_sphere)?;
+            sphere_2.generate(n_sphere)?;
+        ))
     }
 }
 
 impl<const NCOLS: usize> Display for TwoUniformSpheres<NCOLS> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "2uniformspheres")
     }
 }

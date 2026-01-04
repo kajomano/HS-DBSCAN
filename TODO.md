@@ -83,7 +83,7 @@
 - [x] Clippy
 - [x] Error handling
 - [ ] Docs
-  - [ ] README
+  - [x] README
   - [ ] Docstrings
 
 ## Issues
@@ -97,5 +97,5 @@
 
 ## Housekeeping
 - [ ] Add LICENSE
-- [ ] Add README
+- [x] Add README
 - [ ] Clean up TODOs

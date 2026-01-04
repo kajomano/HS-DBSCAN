@@ -23,9 +23,7 @@ impl<const NCOLS: usize> Generate<NCOLS> for UniformBox<NCOLS> {
         let mut rng = StdRng::from_seed([1; 32]);
 
         Ok(FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, col| {
-            rng.random_range(
-                (self.center[col] - (self.size / 2.0))..(self.center[col] + (self.size / 2.0)),
-            )
+            rng.random_range((self.center[col] - (self.size))..(self.center[col] + (self.size)))
         }))
     }
 }

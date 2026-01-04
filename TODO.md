@@ -2,7 +2,7 @@
 - [x] Write dumb implementation
 - [x] Write unit tests
 - [x] Write benchmarks
-- [ ] Write plotting
+- [x] Write plotting
 - Extend with:
   - [x] Other norms
   - [x] Rasterization
@@ -85,7 +85,7 @@
 - [x] Docs
   - [x] README
   - [x] Docstrings
-  - [ ] Update benchmark results
+  - [x] Update benchmark results
 
 ## Issues
 - [x] Norm variants don't change the performance

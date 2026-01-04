@@ -15,7 +15,16 @@ pub mod proximity;
 pub mod rasterizer;
 pub mod types;
 
-// TODO: docstring
+/// High-Speed DBSCAN algorithm.
+///
+/// Implements an approximate [DBSCAN](resources/dbscan.pdf) algorithm, with focus on execution speed for smaller
+/// datasets (~1k-10k points).
+///
+/// The approximate nature of the algorithm comes from a quantization/binning/rasterization step before the clustering,
+/// where each input point is assigned to a rectangular bin. The clustering then runs on the centroids of the bins,
+/// which potentially drastically reduces the effective number of input points. To retain the density-oriented nature of
+/// DBSCAN, the centroids are weighted by the number of datapoints they represent, and the modified DBSCAN algorithm
+/// respects these weights when estimating density.
 pub fn hs_dbscan<const NCOLS: usize>(
     input: &FloatMatrixType<NCOLS>,
     config: &HsDbscanConfig,

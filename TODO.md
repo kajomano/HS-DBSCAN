@@ -84,7 +84,7 @@
 - [x] Error handling
 - [ ] Docs
   - [x] README
-  - [ ] Docstrings
+  - [x] Docstrings
 
 ## Issues
 - [x] Norm variants don't change the performance
@@ -96,6 +96,6 @@
   - Works as intended, wasn't changing the config in the correct place
 
 ## Housekeeping
-- [ ] Add LICENSE
+- [x] Add LICENSE
 - [x] Add README
-- [ ] Clean up TODOs
+- [x] Clean up TODOs

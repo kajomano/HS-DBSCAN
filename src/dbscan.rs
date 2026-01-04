@@ -3,7 +3,6 @@ use crate::{
     types::{IndexType, IndexVectorType},
 };
 
-// TODO: docstring
 pub fn dbscan<P: Proximity>(prox: &P, min_pts: IndexType) -> IndexVectorType {
     let mut dbscan = Dbscan::new(prox, min_pts);
     dbscan.cluster(prox);
@@ -37,7 +36,7 @@ impl Dbscan {
         }
     }
 
-    // TODO: docstring
+    /// Try to run an `expand_cluster()` on all input points if they are core points.
     fn cluster<P: Proximity>(&mut self, prox: &P) {
         let mut cluster_id: IndexType = 1;
 
@@ -52,7 +51,9 @@ impl Dbscan {
         }
     }
 
-    // TODO: docstring
+    /// Reecursively expand a cluster around a core point.
+    ///
+    /// Exactly implements the algorithm described in the DBSCAN paper, which can be found in `./resources/dbscan.pdf`.
     unsafe fn expand_cluster<P: Proximity>(
         &mut self,
         prox: &P,
@@ -116,7 +117,7 @@ impl Dbscan {
         }
     }
 
-    // TODO: docstring
+    /// Set the cluster ID on all seed points.
     fn set_cluster_ids_on_seeds(&mut self, cluster_id: IndexType) {
         for state in self.states.iter_mut() {
             if state.seed {
@@ -126,7 +127,7 @@ impl Dbscan {
         }
     }
 
-    // TODO: docstring
+    /// Return the cluster IDs for all input points in order.
     fn clusters(self) -> IndexVectorType {
         IndexVectorType::from_iterator(
             self.states.len(),

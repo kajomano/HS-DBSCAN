@@ -8,9 +8,14 @@ This repository implements an approximate [DBSCAN](resources/dbscan.pdf) algorit
 
 The approximate nature of the algorithm comes from a quantization/binning/rasterization step before the clustering, where each input point is assigned to a rectangular bin of size `raster_res`. The clustering then runs on the centroids of the bins, which potentially drastically reduces the effective number of input points. To retain the density-oriented nature of DBSCAN, the centroids are weighted by the number of datapoints they represent, and the modified DBSCAN algorithm respects these weights when estimating density.
 
-The raster interacts with the DBSCAN algorithm's `eps` parameter. My recommendation is that `raster_res` should not exceed  `eps/3`.
+The raster interacts with the DBSCAN algorithm's `eps` parameter and the chosen norm. My recommendation is that `raster_res` should be set to:
+- `L1` norm: `raster_res < eps/n_dims`
+- `L2` or `L2Squared` norm: `raster_res < eps/sqrt(n_dims)`
+- `Linf` norm: `raster_res < eps`
 
-The curse of dimensionality can cause `eps` and `raster_res` to behave unintuitively on higher-dimensional datasets. To counteract this, I recommend the `Linf` (default) norm to be used. This norm works well with the rectangular bins even in higher dimensions, and as a nice side-effect, it is also a little faster to compute than the ususal `L2` norm.
+The larger the `raster_res` is, the more likely a bin will group more points, thereby speeding up the algorithm.
+
+The curse of dimensionality can cause `eps` and `raster_res` to behave unintuitively on higher-dimensional datasets. To counteract this, I recommend the `Linf` (default is `L2Squared`) norm to be used. This norm works well with the rectangular bins even in higher dimensions, and as a nice side-effect, it is also a little faster to compute than the ususal `L2` norm.
 
 ## Low-bit primitives
 

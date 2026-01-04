@@ -14,7 +14,7 @@ use dataviz::figure::{
 use eyre::Result;
 use hs_dbscan::{
     config::{HsDbscanConfig, test::TestDefault},
-    generate::{Generate, TwoUniformSpheres},
+    generate::{Generate, TwoUniformSpheres, UniformBox, UniformSphere},
     hs_dbscan,
     types::{FloatMatrixType, IndexType, IndexVectorType},
 };
@@ -109,5 +109,12 @@ fn generate_plot<G: Generate<2>>(generator: G, n_pts: usize) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    generate_plot(TwoUniformSpheres::test_default(), 10000)
+    // Recommended:
+    // n_pts: 100   - min_pts: 10
+    // n_pts: 1000  - min_pts: 70
+    // n_pts: 10000 - min_pts: 500
+
+    generate_plot(UniformBox::test_default(), 1000)?;
+    generate_plot(UniformSphere::test_default(), 1000)?;
+    generate_plot(TwoUniformSpheres::test_default(), 1000)
 }

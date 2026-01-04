@@ -195,18 +195,22 @@ fn benchmark_e2e(
     group.measurement_time(Duration::from_secs(10));
 
     macro_rules! e2e {
-        ($n:literal) => {
+        ($n:literal, $min_pts:literal) => {
             let input = generator.generate($n)?;
+            let config = HsDbscanConfig {
+                min_pts: $min_pts,
+                ..*config
+            };
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(hs_dbscan(&input, config).unwrap()))
+            group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
+                b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
             });
         };
     }
 
-    e2e!(100);
-    e2e!(1000);
-    e2e!(10000);
+    e2e!(100, 10);
+    e2e!(1000, 70);
+    e2e!(10000, 500);
 
     group.finish();
 
@@ -238,28 +242,26 @@ criterion_main!(benches);
 
 // =====================================================================================================================
 
-// f64
+// rast_init_0.7_uniformbox/100         time:   [2.6149 µs 2.6197 µs 2.6248 µs]
+// rast_init_0.7_uniformbox/1000        time:   [13.064 µs 13.083 µs 13.106 µs]
+// rast_init_0.7_uniformbox/10000       time:   [104.80 µs 104.98 µs 105.19 µs]
 
-// rast_init_1_uniformbox/100           time:   [2.6827 µs 2.6870 µs 2.6918 µs]
-// rast_init_1_uniformbox/1000          time:   [16.653 µs 16.680 µs 16.712 µs]
-// rast_init_1_uniformbox/10000         time:   [212.78 µs 214.05 µs 215.48 µs]
+// prox_init_L2Squared_uniformbox/100   time:   [10.466 µs 10.479 µs 10.493 µs]
+// prox_init_L2Squared_uniformbox/1000  time:   [1.0640 ms 1.0661 ms 1.0684 ms]
+// prox_init_L2Squared_uniformbox/10000 time:   [132.47 ms 132.91 ms 133.43 ms]
 
-// prox_init_L2Squared_uniformbox/100   time:   [10.446 µs 10.458 µs 10.471 µs]
-// prox_init_L2Squared_uniformbox/1000  time:   [1.1359 ms 1.1371 ms 1.1384 ms]
-// prox_init_L2Squared_uniformbox/10000 time:   [140.88 ms 141.08 ms 141.29 ms]
+// dbscan_uniformbox/100                time:   [5.3446 µs 5.3514 µs 5.3585 µs]
+// dbscan_uniformbox/1000               time:   [98.031 µs 98.113 µs 98.203 µs]
+// dbscan_uniformbox/10000              time:   [121.30 ms 121.46 ms 121.64 ms]
 
-// dbscan_uniformbox/100                time:   [12.454 µs 12.491 µs 12.529 µs]
-// dbscan_uniformbox/1000               time:   [2.3946 ms 2.4066 ms 2.4186 ms]
-// dbscan_uniformbox/10000              time:   [277.25 ms 277.63 ms 278.00 ms]
+// e2e_uniformbox/100_10                time:   [13.604 µs 13.626 µs 13.648 µs]
+// e2e_uniformbox/1000_70               time:   [74.464 µs 74.572 µs 74.684 µs]
+// e2e_uniformbox/10000_500             time:   [177.64 µs 177.92 µs 178.20 µs]
 
-// e2e_uniformbox/100                   time:   [5.7981 µs 5.8055 µs 5.8135 µs]
-// e2e_uniformbox/1000                  time:   [21.093 µs 21.115 µs 21.138 µs]
-// e2e_uniformbox/10000                 time:   [229.47 µs 230.70 µs 231.91 µs]
+// e2e_uniformsphere/100_10             time:   [1.3227 µs 1.3241 µs 1.3257 µs]
+// e2e_uniformsphere/1000_70            time:   [9.7133 µs 9.7288 µs 9.7480 µs]
+// e2e_uniformsphere/10000_500          time:   [94.666 µs 94.785 µs 94.918 µs]
 
-// e2e_uniformsphere/100                time:   [3.2413 µs 3.2453 µs 3.2500 µs]
-// e2e_uniformsphere/1000               time:   [26.385 µs 26.408 µs 26.433 µs]
-// e2e_uniformsphere/10000              time:   [280.30 µs 280.88 µs 281.54 µs]
-
-// e2e_2uniformspheres/100              time:   [5.3867 µs 5.3925 µs 5.3986 µs]
-// e2e_2uniformspheres/1000             time:   [35.255 µs 35.297 µs 35.350 µs]
-// e2e_2uniformspheres/10000            time:   [328.87 µs 329.72 µs 330.54 µs]
+// e2e_2uniformspheres/100_10           time:   [11.973 µs 11.985 µs 11.999 µs]
+// e2e_2uniformspheres/1000_70          time:   [54.093 µs 54.214 µs 54.324 µs]
+// e2e_2uniformspheres/10000_500        time:   [187.89 µs 188.09 µs 188.31 µs]

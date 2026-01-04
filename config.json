@@ -1,8 +1,8 @@
 {
-	"raster_res": 0.1,
+	"raster_res": 0.7,
 	"proximity": {
-		"eps": 0.3,
+		"eps": 1.0,
 		"norm": "L2Squared"
 	},
-	"min_pts": 50
+	"min_pts": 70
 }

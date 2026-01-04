@@ -82,9 +82,10 @@
 
 - [x] Clippy
 - [x] Error handling
-- [ ] Docs
+- [x] Docs
   - [x] README
   - [x] Docstrings
+  - [ ] Update benchmark results
 
 ## Issues
 - [x] Norm variants don't change the performance

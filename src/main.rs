@@ -85,17 +85,19 @@ fn plot_scatter(datasets: Vec<ScatterGraphDataset>, file_name: &str, plot_title:
     canvas.save_as_image(&format!("plots/{}.png", file_name));
 }
 
-fn generate_plot<G: Generate<2>>(generator: G, n_pts: usize, min_pts: IndexType) -> Result<()> {
-    let config = HsDbscanConfig {
-        min_pts,
-        ..serde_json::from_reader(File::open(Path::new("./config.json"))?)?
-    };
+fn generate_plot<G: Generate<2>>(generator: G, n_pts: usize) -> Result<()> {
+    let config: HsDbscanConfig = serde_json::from_reader(File::open(Path::new("./config.json"))?)?;
 
     let input = generator.generate(n_pts)?;
     let cluster_ids = hs_dbscan(&input, &config)?;
 
-    let file_name = format!("{}_{}_{}", generator, n_pts, min_pts);
-    let plot_title = format!("{}, n_pts: {}, min_pts: {}", generator, n_pts, min_pts);
+    let file_name = format!("{}_{}", generator, n_pts);
+    let plot_title = format!(
+        "{}, n_pts: {}, config: {}",
+        generator,
+        n_pts,
+        &serde_json::to_string(&config)?
+    );
 
     plot_scatter(
         create_datasets(&input, &cluster_ids),
@@ -107,5 +109,5 @@ fn generate_plot<G: Generate<2>>(generator: G, n_pts: usize, min_pts: IndexType)
 }
 
 fn main() -> Result<()> {
-    generate_plot(UniformBox::test_default(), 1000, 100)
+    generate_plot(UniformBox::test_default(), 1000)
 }

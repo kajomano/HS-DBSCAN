@@ -37,7 +37,7 @@ pub mod test {
     impl TestDefault for HsDbscanConfig {
         fn test_default() -> Self {
             Self {
-                raster_res: Some(0.3),
+                raster_res: Some(1.0),
                 proximity: TestDefault::test_default(),
                 min_pts: 10,
             }
@@ -47,7 +47,7 @@ pub mod test {
     impl TestDefault for ProximityConfig {
         fn test_default() -> Self {
             Self {
-                eps: 1.0,
+                eps: 3.0,
                 norm: TestDefault::test_default(),
             }
         }

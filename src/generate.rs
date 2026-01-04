@@ -51,11 +51,14 @@ impl<const NCOLS: usize> Generate<NCOLS> for UniformSphere<NCOLS> {
         let mut points =
             FloatMatrixType::<NCOLS>::from_fn(n_pts, |_, _| normal_dist.sample(&mut rng));
 
-        points.row_iter_mut().for_each(|mut row| {
-            let u: FloatType = rng.random_range(0.0..1.0);
-            let u = u.powf(1.0 / (NCOLS as FloatType)) * self.radius;
-            row *= row.norm() * u;
-        });
+        let center = FloatMatrixType::<NCOLS>::from_row_slice(&self.center);
+
+        for mut point in points.row_iter_mut() {
+            let mut u: FloatType = rng.random_range(0.0..1.0);
+            u = u.powf(1.0 / (NCOLS as FloatType)) * self.radius;
+            point *= u / point.norm();
+            point += &center;
+        }
 
         Ok(points)
     }
@@ -156,8 +159,8 @@ pub(crate) mod test {
             TwoUniformSpheres {
                 center: [5.0; NCOLS],
                 size: 5.0,
-                offset: 2.0,
-                radius: 1.0,
+                offset: 2.5,
+                radius: 2.0,
                 noise_ratio: 0.2,
             }
         }

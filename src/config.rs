@@ -37,9 +37,9 @@ pub mod test {
     impl TestDefault for HsDbscanConfig {
         fn test_default() -> Self {
             Self {
-                raster_res: Some(1.0),
+                raster_res: Some(0.1),
                 proximity: TestDefault::test_default(),
-                min_pts: 10,
+                min_pts: 50,
             }
         }
     }
@@ -47,7 +47,7 @@ pub mod test {
     impl TestDefault for ProximityConfig {
         fn test_default() -> Self {
             Self {
-                eps: 3.0,
+                eps: 0.3,
                 norm: TestDefault::test_default(),
             }
         }
@@ -55,24 +55,7 @@ pub mod test {
 
     impl TestDefault for NormConfig {
         fn test_default() -> Self {
-            Self::L2Squared
-        }
-    }
-
-    #[cfg(test)]
-    mod test {
-        use crate::config::{HsDbscanConfig, test::TestDefault};
-        use serde::Serialize;
-        use serde_json::{Serializer, ser::PrettyFormatter};
-        use std::{fs::File, io::BufWriter, path::Path};
-
-        #[test]
-        fn write_default_config_json() {
-            let mut writer = BufWriter::new(File::create(&Path::new("./config.json")).unwrap());
-            let mut serializer =
-                Serializer::with_formatter(&mut writer, PrettyFormatter::with_indent(b"\t"));
-
-            Serialize::serialize(&HsDbscanConfig::test_default(), &mut serializer).unwrap();
+            Self::Linf
         }
     }
 }

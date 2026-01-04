@@ -14,7 +14,7 @@ use dataviz::figure::{
 use eyre::Result;
 use hs_dbscan::{
     config::{HsDbscanConfig, test::TestDefault},
-    generate::{Generate, UniformBox},
+    generate::{Generate, TwoUniformSpheres},
     hs_dbscan,
     types::{FloatMatrixType, IndexType, IndexVectorType},
 };
@@ -59,7 +59,7 @@ fn create_datasets<const NCOLS: usize>(
 
     // Assign points to datasets
     for (point, id) in input.row_iter().zip(cluster_ids.iter()) {
-        datasets[*id as usize].add_point((point[(0, 0)], point[(0, 1)]));
+        datasets[*id as usize].add_point((point[(0, 0)] as f64, point[(0, 1)] as f64));
     }
 
     datasets
@@ -68,13 +68,13 @@ fn create_datasets<const NCOLS: usize>(
 /// Plot a scatter plot (taken from [example](https://github.com/dataviz-rs/dataviz-examples/blob/main/pixelscattergraphdisplay/src/main.rs)).
 fn plot_scatter(datasets: Vec<ScatterGraphDataset>, file_name: &str, plot_title: &str) {
     let figure_config = FigureConfig {
-        font_label: Some("arial.ttf".to_string()),
-        font_title: Some("arial.ttf".to_string()),
+        font_label: Some("resources/arial.ttf".to_string()),
+        font_title: Some("resources/arial.ttf".to_string()),
         color_grid: [255, 255, 255],
         ..Default::default()
     };
 
-    let mut canvas = PixelCanvas::new(1920, 1080, [255, 255, 255], 80);
+    let mut canvas = PixelCanvas::new(1920, 1920, [255, 255, 255], 80);
     let mut scatter_graph = ScatterGraph::new(plot_title, "", "", figure_config);
 
     for dataset in datasets.into_iter() {
@@ -109,5 +109,5 @@ fn generate_plot<G: Generate<2>>(generator: G, n_pts: usize) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    generate_plot(UniformBox::test_default(), 1000)
+    generate_plot(TwoUniformSpheres::test_default(), 10000)
 }

@@ -73,8 +73,8 @@
 - [x] e2e benchmarks
   - [x] More data distributions!
 
-- [ ] Plots
-  - [ ] Moar plots
+- [x] Plots
+  - [x] Moar plots
 
 - [ ] Try converting to column-major-friendly layout for speed
   - [ ] Rename NCOLS to NDIMS
@@ -83,6 +83,8 @@
 - [x] Clippy
 - [x] Error handling
 - [ ] Docs
+  - [ ] README
+  - [ ] Docstrings
 
 ## Issues
 - [x] Norm variants don't change the performance
@@ -90,7 +92,8 @@
 - [x] Smaller `RasterTypes` give a slowdown (i32, i16)
   - Fixed once I cleaned up inefficiencies in the rasterizer
 - [ ] Rasterizer benchmarks are not reproducible, vary like crazy
-- [ ] Something doesn't work when rasterizing, visible on plots
+- [x] Something doesn't work when rasterizing, visible on plots
+  - Works as intended, wasn't changing the config in the correct place
 
 ## Housekeeping
 - [ ] Add LICENSE

@@ -1,11 +1,11 @@
-use crate::types::{FloatType, IndexType};
+use crate::types::IndexType;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
 /// Top-level configuration struct for HS-DBSCAN.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct HsDbscanConfig {
-    pub raster_res: Option<FloatType>,
+    pub raster_res: Option<f64>,
     pub proximity: ProximityConfig,
     pub min_pts: IndexType,
 }
@@ -13,7 +13,7 @@ pub struct HsDbscanConfig {
 /// Configuration for proximity calculation.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct ProximityConfig {
-    pub eps: FloatType,
+    pub eps: f64,
     pub norm: NormConfig,
 }
 
@@ -22,7 +22,6 @@ pub struct ProximityConfig {
 pub enum NormConfig {
     L1,
     L2,
-    L2Squared,
     Linf,
 }
 
@@ -55,7 +54,7 @@ pub mod test {
 
     impl TestDefault for NormConfig {
         fn test_default() -> Self {
-            Self::L2Squared
+            Self::L2
         }
     }
 }

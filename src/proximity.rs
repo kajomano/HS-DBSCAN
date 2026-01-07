@@ -1,66 +1,81 @@
 use crate::{
-    config::{NormConfig, ProximityConfig},
-    types::{FloatMatrixType, FloatType, IndexType},
+    config::NormConfig,
+    types::{IndexType, MatrixType},
 };
-use eyre::{Result, ensure};
+use eyre::{OptionExt, Result, ensure};
 use nalgebra::{
-    Const, Dyn, LpNorm, Matrix, OMatrix, OVector, Storage, UniformNorm, Vector, VectorView,
+    ClosedAddAssign, ClosedSubAssign, Const, Dyn, Matrix, OMatrix, OVector, Scalar, SimdValue,
+    Storage, Vector, VectorView,
 };
-use std::ops::SubAssign;
+use num::{NumCast, Signed, Zero};
+use std::{
+    cmp::PartialOrd,
+    ops::{Mul, SubAssign},
+};
 
-// NOTE: the bound on S is not enforced through type aliases, so add it as a bound on the function too!
-#[allow(type_alias_bounds)]
-type VectorViewType<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>> =
-    Matrix<FloatType, Const<NDIMS>, Const<1>, S>;
+type VectorViewType<const NDIMS: usize, T, S> = Matrix<T, Const<NDIMS>, Const<1>, S>;
 
 trait Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
+    fn apply<
+        const NDIMS: usize,
+        T: Scalar
+            + Zero
+            + Signed
+            + ClosedAddAssign
+            + ClosedSubAssign
+            + Mul<Output = T>
+            + SimdValue<Element = T, SimdBool = bool>
+            + PartialOrd
+            + Copy,
+        S: Storage<T, Const<NDIMS>, Const<1>>,
+    >(
         &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType;
+        input: &VectorViewType<NDIMS, T, S>,
+    ) -> T;
 }
 
 struct L1Norm;
 
 impl Norm for L1Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
+    fn apply<
+        const NDIMS: usize,
+        T: Scalar + Zero + Signed + ClosedAddAssign,
+        S: Storage<T, Const<NDIMS>, Const<1>>,
+    >(
         &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType {
-        input.apply_norm(&LpNorm(1))
+        input: &VectorViewType<NDIMS, T, S>,
+    ) -> T {
+        input.abs().sum()
     }
 }
 
 struct L2Norm;
 
 impl Norm for L2Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
+    fn apply<
+        const NDIMS: usize,
+        T: Scalar + Zero + Mul<Output = T> + Copy,
+        S: Storage<T, Const<NDIMS>, Const<1>>,
+    >(
         &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType {
-        input.norm()
-    }
-}
-
-struct L2SquaredNorm;
-
-impl Norm for L2SquaredNorm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
-        &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType {
-        input.norm_squared()
+        input: &VectorViewType<NDIMS, T, S>,
+    ) -> T {
+        input.iter().fold(T::zero(), |acc, &v| acc + v * v)
     }
 }
 
 struct LinfNorm;
 
 impl Norm for LinfNorm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
+    fn apply<
+        const NDIMS: usize,
+        T: Scalar + Zero + Signed + SimdValue<Element = T, SimdBool = bool> + PartialOrd + Copy,
+        S: Storage<T, Const<NDIMS>, Const<1>>,
+    >(
         &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType {
-        input.apply_norm(&UniformNorm)
+        input: &VectorViewType<NDIMS, T, S>,
+    ) -> T {
+        input.abs().max()
     }
 }
 
@@ -81,22 +96,35 @@ pub struct MatrixProximity {
 }
 
 impl MatrixProximity {
-    pub fn new<const NDIMS: usize, S: Storage<IndexType, Dyn>>(
-        input: &FloatMatrixType<NDIMS>,
+    pub fn new<
+        const NDIMS: usize,
+        T: Scalar
+            + Zero
+            + Signed
+            + ClosedAddAssign
+            + ClosedSubAssign
+            + Mul<Output = T>
+            + SimdValue<Element = T, SimdBool = bool>
+            + PartialOrd
+            + Copy
+            + NumCast,
+        S: Storage<IndexType, Dyn>,
+    >(
+        input: &MatrixType<NDIMS, T>,
         weights: &Vector<IndexType, Dyn, S>,
-        config: &ProximityConfig,
+        eps: f64,
+        norm: &NormConfig,
     ) -> Result<Self> {
+        let eps = T::from(eps).ok_or_eyre("Couldn't cast eps to T")?;
+
         ensure!(input.ncols() <= IndexType::MAX as usize);
         ensure!(input.ncols() == weights.nrows());
-        ensure!(config.eps >= 0.0);
+        ensure!(eps >= T::zero());
 
-        let proximities = match config.norm {
-            NormConfig::L1 => Self::pairwise_proximities(input, weights, L1Norm, config.eps),
-            NormConfig::L2 => Self::pairwise_proximities(input, weights, L2Norm, config.eps),
-            NormConfig::L2Squared => {
-                Self::pairwise_proximities(input, weights, L2SquaredNorm, config.eps * config.eps)
-            }
-            NormConfig::Linf => Self::pairwise_proximities(input, weights, LinfNorm, config.eps),
+        let proximities = match norm {
+            NormConfig::L1 => Self::pairwise_proximities(input, weights, eps, L1Norm),
+            NormConfig::L2 => Self::pairwise_proximities(input, weights, eps * eps, L2Norm),
+            NormConfig::Linf => Self::pairwise_proximities(input, weights, eps, LinfNorm),
         };
 
         Ok(Self { proximities })
@@ -106,15 +134,28 @@ impl MatrixProximity {
     ///
     /// Returns an NxN complete proximity matrix, in which 0 means outside of the proximity, and anything larger than 0
     /// means inside the proximity. Larger than 0 values in the proximity matrix contain the weight of the point.
-    fn pairwise_proximities<const NDIMS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
-        input: &FloatMatrixType<NDIMS>,
+    fn pairwise_proximities<
+        const NDIMS: usize,
+        T: Scalar
+            + Zero
+            + Signed
+            + ClosedAddAssign
+            + ClosedSubAssign
+            + Mul<Output = T>
+            + SimdValue<Element = T, SimdBool = bool>
+            + PartialOrd
+            + Copy,
+        N: Norm,
+        S: Storage<IndexType, Dyn>,
+    >(
+        input: &MatrixType<NDIMS, T>,
         weights: &Vector<IndexType, Dyn, S>,
+        eps: T,
         norm: N,
-        eps: FloatType,
     ) -> OMatrix<IndexType, Dyn, Dyn> {
         let n = input.ncols();
 
-        let mut buffer = FloatMatrixType::<NDIMS>::zeros(n);
+        let mut buffer = MatrixType::<NDIMS, T>::zeros(n);
         let mut proximities = OMatrix::<IndexType, Dyn, Dyn>::zeros(n, n);
 
         // Calculate pairwise proximities. Only calculates the lower diagonal!
@@ -173,27 +214,20 @@ impl Proximity for MatrixProximity {
 #[cfg(test)]
 mod test {
     use crate::{
-        config::test::TestDefault,
+        config::{NormConfig, ProximityConfig, test::TestDefault},
         generate::test::generate_2_point_dataset,
-        proximity::{
-            L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,
-            ProximityConfig,
-        },
+        proximity::{L1Norm, L2Norm, LinfNorm, MatrixProximity, Norm},
         types::{FloatMatrixType, FloatType, IndexType},
     };
     use approx::assert_relative_eq;
     use nalgebra::{Dyn, OMatrix, OVector, Vector2};
     use rstest::rstest;
 
-    fn f(num: FloatType) -> FloatType {
-        num
-    }
-
     #[rstest]
     #[case(L1Norm, [1.0, 2.0], 3.0)]
     #[case(L1Norm, [1.0, -2.0], 3.0)]
-    #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
-    #[case(L2SquaredNorm, [1.0, 2.0], 5.0)]
+    #[case(L2Norm, [1.0, 2.0], 5.0)]
+    #[case(L2Norm, [1.0, -2.0], 5.0)]
     #[case(LinfNorm, [1.0, 2.0], 2.0)]
     #[case(LinfNorm, [1.0, -2.0], 2.0)]
     fn test_norms<N: Norm>(
@@ -215,21 +249,20 @@ mod test {
     #[case([-2.0, -2.0], [0.0, 0.0], 5.0, NormConfig::L1, 1)]
     #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2, 0)]
     #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2, 1)]
-    #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2Squared, 0)]
-    #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2Squared, 1)]
     #[case([0.0, 0.0], [2.0, 2.0], 1.0, NormConfig::Linf, 0)]
     #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::Linf, 1)]
     fn test_matrix_proximity_pairs(
         #[case] point_1: [FloatType; 2],
         #[case] point_2: [FloatType; 2],
-        #[case] eps: FloatType,
+        #[case] eps: f64,
         #[case] norm: NormConfig,
         #[case] expected: IndexType,
     ) {
         let prox = MatrixProximity::new(
             &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::repeat(2, 1),
-            &ProximityConfig { eps, norm },
+            eps,
+            &norm,
         )
         .unwrap();
 
@@ -251,10 +284,12 @@ mod test {
         #[case] weight_2: IndexType,
         #[case] expected: [IndexType; 4],
     ) {
+        let ProximityConfig { eps, norm } = ProximityConfig::test_default();
         let prox = MatrixProximity::new(
             &generate_2_point_dataset(point_1, 1, point_2, 1),
             &OVector::<IndexType, Dyn>::from_column_slice(&[weight_1, weight_2]),
-            &ProximityConfig::test_default(),
+            eps,
+            &norm,
         )
         .unwrap();
 
@@ -268,10 +303,12 @@ mod test {
     #[case(1)]
     #[case(10)]
     fn test_marix_proximity_shape(#[case] n: usize) {
+        let ProximityConfig { eps, norm } = ProximityConfig::test_default();
         let prox = MatrixProximity::new(
             &FloatMatrixType::<2>::zeros(n),
             &OVector::<IndexType, Dyn>::repeat(n, 1),
-            &ProximityConfig::test_default(),
+            eps,
+            &norm,
         )
         .unwrap();
 
@@ -281,10 +318,12 @@ mod test {
     #[test]
     #[should_panic]
     fn test_matrix_proximity_invalid_input_rows() {
+        let ProximityConfig { eps, norm } = ProximityConfig::test_default();
         MatrixProximity::new(
             &FloatMatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(3, 1),
-            &ProximityConfig::test_default(),
+            eps,
+            &norm,
         )
         .unwrap();
     }
@@ -295,10 +334,8 @@ mod test {
         MatrixProximity::new(
             &FloatMatrixType::<2>::identity(2),
             &OVector::<IndexType, Dyn>::repeat(2, 1),
-            &ProximityConfig {
-                eps: -1.0,
-                norm: NormConfig::test_default(),
-            },
+            -1.0,
+            &NormConfig::test_default(),
         )
         .unwrap();
     }

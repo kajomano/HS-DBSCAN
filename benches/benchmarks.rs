@@ -21,12 +21,12 @@ use hs_dbscan::{
     hs_dbscan,
     proximity::{MatrixProximity, Proximity},
     rasterizer::Rasterizer,
-    types::{FloatType, IndexVectorType},
+    types::IndexVectorType,
 };
 use std::{hint::black_box, time::Duration};
 
 fn benchmark_rasterizer_init(
-    raster_res: FloatType,
+    raster_res: f64,
     generator: &impl Generate<2>,
     c: &mut Criterion,
 ) -> Result<()> {
@@ -54,7 +54,7 @@ fn benchmark_rasterizer_init(
 
 #[allow(dead_code)]
 fn benchmark_rasterizer_map(
-    raster_res: FloatType,
+    raster_res: f64,
     generator: &impl Generate<2>,
     c: &mut Criterion,
 ) -> Result<()> {
@@ -97,7 +97,15 @@ fn benchmark_proximity_init(
 
             group.bench_function(format!("{}", $n), |b| {
                 b.iter(|| {
-                    black_box(MatrixProximity::new(&input, &weights, &proximity_config).unwrap())
+                    black_box(
+                        MatrixProximity::new(
+                            &input,
+                            &weights,
+                            proximity_config.eps,
+                            &proximity_config.norm,
+                        )
+                        .unwrap(),
+                    )
                 })
             });
         };
@@ -137,7 +145,8 @@ fn benchmark_proximity_query(
             let prox = MatrixProximity::new(
                 &generator.generate($n)?,
                 &IndexVectorType::repeat($n, 1),
-                &proximity_config,
+                proximity_config.eps,
+                &proximity_config.norm,
             )?;
 
             group.bench_function(format!("{}", $n), |b| {
@@ -168,7 +177,8 @@ fn benchmark_dbscan(
             let prox = MatrixProximity::new(
                 &generator.generate($n)?,
                 &IndexVectorType::repeat($n, 1),
-                &config.proximity,
+                config.proximity.eps,
+                &config.proximity.norm,
             )?;
 
             group.bench_function(format!("{}", $n), |b| {
@@ -274,9 +284,9 @@ criterion_main!(benches);
 // rast_init_0.7_uniformbox/1000        time:   [13.596 µs 13.644 µs 13.692 µs]
 // rast_init_0.7_uniformbox/10000       time:   [122.26 µs 123.31 µs 124.29 µs]
 
-// prox_init_L2Squared_uniformbox/100   time:   [11.352 µs 11.401 µs 11.472 µs]
-// prox_init_L2Squared_uniformbox/1000  time:   [825.85 µs 830.37 µs 836.11 µs]
-// prox_init_L2Squared_uniformbox/10000 time:   [181.64 ms 182.42 ms 183.44 ms]
+// prox_init_L2_uniformbox/100          time:   [11.822 µs 11.855 µs 11.892 µs]
+// prox_init_L2_uniformbox/1000         time:   [869.94 µs 875.00 µs 881.46 µs]
+// prox_init_L2_uniformbox/10000        time:   [185.27 ms 186.09 ms 187.15 ms]
 
 // dbscan_uniformbox/100                time:   [9.2464 µs 9.3014 µs 9.3709 µs]
 // dbscan_uniformbox/1000               time:   [144.95 µs 145.21 µs 145.50 µs]

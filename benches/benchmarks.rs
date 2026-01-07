@@ -268,7 +268,7 @@ criterion_main!(benches);
 // e2e_2uniformspheres/1000_70          time:   [54.093 µs 54.214 µs 54.324 µs]
 // e2e_2uniformspheres/10000_500        time:   [187.89 µs 188.09 µs 188.31 µs]
 
-// arm
+// arm64
 
 // rast_init_0.7_uniformbox/100         time:   [2.9818 µs 2.9861 µs 2.9906 µs]
 // rast_init_0.7_uniformbox/1000        time:   [15.827 µs 15.870 µs 15.912 µs]

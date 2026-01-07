@@ -34,8 +34,8 @@ fn select_color(cluster_id: IndexType) -> [u8; 3] {
 }
 
 /// Creates a scatterplot datasets for each cluster.
-fn create_datasets<const NCOLS: usize>(
-    input: &FloatMatrixType<NCOLS>,
+fn create_datasets<const NDIMS: usize>(
+    input: &FloatMatrixType<NDIMS>,
     cluster_ids: &IndexVectorType,
 ) -> Vec<ScatterGraphDataset> {
     // Create datasets

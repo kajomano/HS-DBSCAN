@@ -10,22 +10,22 @@ use std::ops::SubAssign;
 
 // NOTE: the bound on S is not enforced through type aliases, so add it as a bound on the function too!
 #[allow(type_alias_bounds)]
-type RowVectorViewType<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>> =
-    Matrix<FloatType, Const<1>, Const<NCOLS>, S>;
+type RowVectorViewType<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>> =
+    Matrix<FloatType, Const<1>, Const<NDIMS>, S>;
 
 trait Norm {
-    fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
         &self,
-        input: &RowVectorViewType<NCOLS, S>,
+        input: &RowVectorViewType<NDIMS, S>,
     ) -> FloatType;
 }
 
 struct L1Norm;
 
 impl Norm for L1Norm {
-    fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
         &self,
-        input: &RowVectorViewType<NCOLS, S>,
+        input: &RowVectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.apply_norm(&LpNorm(1))
     }
@@ -34,9 +34,9 @@ impl Norm for L1Norm {
 struct L2Norm;
 
 impl Norm for L2Norm {
-    fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
         &self,
-        input: &RowVectorViewType<NCOLS, S>,
+        input: &RowVectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.norm()
     }
@@ -45,9 +45,9 @@ impl Norm for L2Norm {
 struct L2SquaredNorm;
 
 impl Norm for L2SquaredNorm {
-    fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
         &self,
-        input: &RowVectorViewType<NCOLS, S>,
+        input: &RowVectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.norm_squared()
     }
@@ -56,9 +56,9 @@ impl Norm for L2SquaredNorm {
 struct LinfNorm;
 
 impl Norm for LinfNorm {
-    fn apply<const NCOLS: usize, S: Storage<FloatType, Const<1>, Const<NCOLS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
         &self,
-        input: &RowVectorViewType<NCOLS, S>,
+        input: &RowVectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.apply_norm(&UniformNorm)
     }
@@ -81,8 +81,8 @@ pub struct MatrixProximity {
 }
 
 impl MatrixProximity {
-    pub fn new<const NCOLS: usize, S: Storage<IndexType, Dyn>>(
-        input: &FloatMatrixType<NCOLS>,
+    pub fn new<const NDIMS: usize, S: Storage<IndexType, Dyn>>(
+        input: &FloatMatrixType<NDIMS>,
         weights: &Vector<IndexType, Dyn, S>,
         config: &ProximityConfig,
     ) -> Result<Self> {
@@ -104,8 +104,8 @@ impl MatrixProximity {
 
     /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
     /// means outside of the proximity, and anything larger than 0 means inside the proximity.
-    fn pairwise_proximities<const NCOLS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
-        input: &FloatMatrixType<NCOLS>,
+    fn pairwise_proximities<const NDIMS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
+        input: &FloatMatrixType<NDIMS>,
         weights: &Vector<IndexType, Dyn, S>,
         norm: N,
         eps: FloatType,

@@ -25,8 +25,8 @@ pub mod types;
 /// which potentially drastically reduces the effective number of input points. To retain the density-oriented nature of
 /// DBSCAN, the centroids are weighted by the number of datapoints they represent, and the modified DBSCAN algorithm
 /// respects these weights when estimating density.
-pub fn hs_dbscan<const NCOLS: usize>(
-    input: &FloatMatrixType<NCOLS>,
+pub fn hs_dbscan<const NDIMS: usize>(
+    input: &FloatMatrixType<NDIMS>,
     config: &HsDbscanConfig,
 ) -> Result<IndexVectorType> {
     if let Some(raster_res) = config.raster_res {

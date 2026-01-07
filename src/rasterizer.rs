@@ -4,19 +4,19 @@ use indexmap::IndexMap;
 use nalgebra::{Const, Dyn, OMatrix, OVector};
 use rapidhash::fast;
 
-pub struct Rasterizer<const NCOLS: usize> {
+pub struct Rasterizer<const NDIMS: usize> {
     mapping: IndexVectorType,
-    centroids: FloatMatrixType<NCOLS>,
+    centroids: FloatMatrixType<NDIMS>,
     weights: IndexVectorType,
 }
 
-impl<const NCOLS: usize> Rasterizer<NCOLS> {
-    pub fn new(input: &FloatMatrixType<NCOLS>, raster_res: FloatType) -> Result<Self> {
+impl<const NDIMS: usize> Rasterizer<NDIMS> {
+    pub fn new(input: &FloatMatrixType<NDIMS>, raster_res: FloatType) -> Result<Self> {
         ensure!(input.nrows() <= IndexType::MAX as usize);
         ensure!(raster_res > 0.0);
 
         let mut bin_map =
-            IndexMap::<[RasterType; NCOLS], IndexType, fast::GlobalState>::with_hasher(
+            IndexMap::<[RasterType; NDIMS], IndexType, fast::GlobalState>::with_hasher(
                 fast::GlobalState::default(),
             );
         let mut mapping = IndexVectorType::zeros(input.nrows());
@@ -27,7 +27,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
 
         // NOTE: need to be transposed so that when accessing columns (rows in the original layout), the memory is
         // contiguous
-        let binned = OMatrix::<RasterType, Dyn, Const<NCOLS>>::from_iterator(
+        let binned = OMatrix::<RasterType, Dyn, Const<NDIMS>>::from_iterator(
             binned_float.nrows(),
             binned_float.iter().map(|&val| val as RasterType),
         )
@@ -35,7 +35,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
 
         // Iterate over the binned points and assign them to bins
         for (idx, bin) in binned.column_iter().enumerate() {
-            // SAFETY: NCOLS makes sure this will never panic
+            // SAFETY: NDIMS makes sure this will never panic
             let entry = bin_map.entry(bin.as_slice().try_into().unwrap());
 
             // Store the centroid ID in the mapping
@@ -64,7 +64,7 @@ impl<const NCOLS: usize> Rasterizer<NCOLS> {
         })
     }
 
-    pub fn rasterize(&self) -> (&FloatMatrixType<NCOLS>, &IndexVectorType) {
+    pub fn rasterize(&self) -> (&FloatMatrixType<NDIMS>, &IndexVectorType) {
         (&self.centroids, &self.weights)
     }
 

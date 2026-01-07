@@ -77,7 +77,7 @@
   - [x] Moar plots
 
 - [ ] Try converting to column-major-friendly layout for speed
-  - [ ] Rename NCOLS to NDIMS
+  - [x] Rename NCOLS to NDIMS
 - [ ] Generic proximity, use integers directly from the rasterizer
 
 - [x] Clippy

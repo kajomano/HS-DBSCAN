@@ -12,26 +12,22 @@ pub struct Rasterizer<const NDIMS: usize> {
 
 impl<const NDIMS: usize> Rasterizer<NDIMS> {
     pub fn new(input: &FloatMatrixType<NDIMS>, raster_res: FloatType) -> Result<Self> {
-        ensure!(input.nrows() <= IndexType::MAX as usize);
+        ensure!(input.ncols() <= IndexType::MAX as usize);
         ensure!(raster_res > 0.0);
 
         let mut bin_map =
             IndexMap::<[RasterType; NDIMS], IndexType, fast::GlobalState>::with_hasher(
                 fast::GlobalState::default(),
             );
-        let mut mapping = IndexVectorType::zeros(input.nrows());
+        let mut mapping = IndexVectorType::zeros(input.ncols());
 
         // Bin the points
-        let mut binned_float = input / raster_res;
-        binned_float.iter_mut().for_each(|val| *val = val.floor());
-
-        // NOTE: need to be transposed so that when accessing columns (rows in the original layout), the memory is
-        // contiguous
-        let binned = OMatrix::<RasterType, Dyn, Const<NDIMS>>::from_iterator(
-            binned_float.nrows(),
-            binned_float.iter().map(|&val| val as RasterType),
-        )
-        .transpose();
+        let binned = OMatrix::<RasterType, Const<NDIMS>, Dyn>::from_iterator(
+            input.ncols(),
+            (input / raster_res)
+                .iter()
+                .map(|&val| val.floor() as RasterType),
+        );
 
         // Iterate over the binned points and assign them to bins
         for (idx, bin) in binned.column_iter().enumerate() {
@@ -44,21 +40,21 @@ impl<const NDIMS: usize> Rasterizer<NDIMS> {
             }
 
             // Insert value into the mapping if new, and increase count
-            let val = entry.or_insert_with(|| 0);
+            let val = entry.or_insert(0);
             *val += 1;
         }
 
         Ok(Self {
             mapping,
             // NOTE: if this would need to be super precise, the centroids would need to be shifted by the half of
-            // raster_res in every dimension, because the "binned_float" coordinates represent the "lower left"
+            // raster_res in every dimension, because the "binned" coordinates represent the "lower left"
             // corners of each bin. However, this would result in a translation of the whole coordinate system,
             // which does not affect the distance calculations, so it can be omitted.
-            centroids: FloatMatrixType::from_row_slice(
-                &bin_map
+            centroids: FloatMatrixType::from_iterator(
+                bin_map.len(),
+                bin_map
                     .keys()
-                    .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res))
-                    .collect::<Vec<_>>(),
+                    .flat_map(|key| key.iter().map(|&val| (val as FloatType) * raster_res)),
             ),
             weights: IndexVectorType::from_iterator(bin_map.len(), bin_map.values().copied()),
         })
@@ -69,7 +65,7 @@ impl<const NDIMS: usize> Rasterizer<NDIMS> {
     }
 
     pub fn map_back(&self, cluster_ids: &IndexVectorType) -> Result<IndexVectorType> {
-        ensure!(self.centroids.nrows() == cluster_ids.nrows());
+        ensure!(self.centroids.ncols() == cluster_ids.nrows());
 
         let mut mapped_ids = OVector::<IndexType, Dyn>::zeros(self.mapping.nrows());
 
@@ -106,10 +102,10 @@ mod test {
         #[case] expected: [FloatType; 2],
     ) {
         assert_relative_eq!(
-            Rasterizer::new(&FloatMatrixType::<2>::from_row_slice(&input), raster_res)
+            Rasterizer::new(&FloatMatrixType::<2>::from_column_slice(&input), raster_res)
                 .unwrap()
                 .centroids,
-            &FloatMatrixType::from_row_slice(&expected),
+            &FloatMatrixType::from_column_slice(&expected),
             epsilon = FloatType::EPSILON
         );
     }
@@ -138,7 +134,7 @@ mod test {
 
         assert_relative_eq!(
             centroids,
-            &FloatMatrixType::from_row_slice(&expected_centroids),
+            &FloatMatrixType::from_column_slice(&expected_centroids),
             epsilon = FloatType::EPSILON
         );
         assert_eq!(

@@ -16,10 +16,10 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use eyre::Result;
 use hs_dbscan::{
     config::{HsDbscanConfig, ProximityConfig, test::TestDefault},
-    dbscan::dbscan,
+    // dbscan::dbscan,
     generate::{Generate, TwoUniformSpheres, UniformBox, UniformSphere},
-    hs_dbscan,
-    proximity::{MatrixProximity, Proximity},
+    // hs_dbscan,
+    // proximity::{MatrixProximity, Proximity},
     rasterizer::Rasterizer,
     types::{FloatType, IndexVectorType},
 };
@@ -82,140 +82,140 @@ fn benchmark_rasterizer_map(
     Ok(())
 }
 
-fn benchmark_proximity_init(
-    proximity_config: &ProximityConfig,
-    generator: &impl Generate<2>,
-    c: &mut Criterion,
-) -> Result<()> {
-    let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
-    group.measurement_time(Duration::from_secs(10));
+// fn benchmark_proximity_init(
+//     proximity_config: &ProximityConfig,
+//     generator: &impl Generate<2>,
+//     c: &mut Criterion,
+// ) -> Result<()> {
+//     let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
+//     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! proximity_init {
-        ($n:literal) => {
-            let input = generator.generate($n)?;
-            let weights = IndexVectorType::repeat($n, 1);
+//     macro_rules! proximity_init {
+//         ($n:literal) => {
+//             let input = generator.generate($n)?;
+//             let weights = IndexVectorType::repeat($n, 1);
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| {
-                    black_box(MatrixProximity::new(&input, &weights, &proximity_config).unwrap())
-                })
-            });
-        };
-    }
+//             group.bench_function(format!("{}", $n), |b| {
+//                 b.iter(|| {
+//                     black_box(MatrixProximity::new(&input, &weights, &proximity_config).unwrap())
+//                 })
+//             });
+//         };
+//     }
 
-    proximity_init!(100);
-    proximity_init!(1000);
-    proximity_init!(10000);
+//     proximity_init!(100);
+//     proximity_init!(1000);
+//     proximity_init!(10000);
 
-    group.finish();
+//     group.finish();
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[allow(dead_code)]
-fn benchmark_proximity_query(
-    proximity_config: &ProximityConfig,
-    generator: &impl Generate<2>,
-    c: &mut Criterion,
-) -> Result<()> {
-    let mut group = c.benchmark_group(format!(
-        "prox_query_{}_{}",
-        proximity_config.norm, generator
-    ));
-    group.measurement_time(Duration::from_secs(5));
+// #[allow(dead_code)]
+// fn benchmark_proximity_query(
+//     proximity_config: &ProximityConfig,
+//     generator: &impl Generate<2>,
+//     c: &mut Criterion,
+// ) -> Result<()> {
+//     let mut group = c.benchmark_group(format!(
+//         "prox_query_{}_{}",
+//         proximity_config.norm, generator
+//     ));
+//     group.measurement_time(Duration::from_secs(5));
 
-    let inner_fn = |prox: &MatrixProximity, n: usize| {
-        for idx in 0..n {
-            unsafe {
-                prox.query(idx);
-            }
-        }
-    };
+//     let inner_fn = |prox: &MatrixProximity, n: usize| {
+//         for idx in 0..n {
+//             unsafe {
+//                 prox.query(idx);
+//             }
+//         }
+//     };
 
-    macro_rules! proximity_query {
-        ($n:literal) => {
-            let prox = MatrixProximity::new(
-                &generator.generate($n)?,
-                &IndexVectorType::repeat($n, 1),
-                &proximity_config,
-            )?;
+//     macro_rules! proximity_query {
+//         ($n:literal) => {
+//             let prox = MatrixProximity::new(
+//                 &generator.generate($n)?,
+//                 &IndexVectorType::repeat($n, 1),
+//                 &proximity_config,
+//             )?;
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(inner_fn(&prox, $n)))
-            });
-        };
-    }
+//             group.bench_function(format!("{}", $n), |b| {
+//                 b.iter(|| black_box(inner_fn(&prox, $n)))
+//             });
+//         };
+//     }
 
-    proximity_query!(100);
-    proximity_query!(1000);
-    proximity_query!(10000);
+//     proximity_query!(100);
+//     proximity_query!(1000);
+//     proximity_query!(10000);
 
-    group.finish();
+//     group.finish();
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-fn benchmark_dbscan(
-    config: &HsDbscanConfig,
-    generator: &impl Generate<2>,
-    c: &mut Criterion,
-) -> Result<()> {
-    let mut group = c.benchmark_group(format!("dbscan_{}", generator));
-    group.measurement_time(Duration::from_secs(10));
+// fn benchmark_dbscan(
+//     config: &HsDbscanConfig,
+//     generator: &impl Generate<2>,
+//     c: &mut Criterion,
+// ) -> Result<()> {
+//     let mut group = c.benchmark_group(format!("dbscan_{}", generator));
+//     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! dbscan {
-        ($n:literal) => {
-            let prox = MatrixProximity::new(
-                &generator.generate($n)?,
-                &IndexVectorType::repeat($n, 1),
-                &config.proximity,
-            )?;
+//     macro_rules! dbscan {
+//         ($n:literal) => {
+//             let prox = MatrixProximity::new(
+//                 &generator.generate($n)?,
+//                 &IndexVectorType::repeat($n, 1),
+//                 &config.proximity,
+//             )?;
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(dbscan(&prox, config.min_pts)))
-            });
-        };
-    }
+//             group.bench_function(format!("{}", $n), |b| {
+//                 b.iter(|| black_box(dbscan(&prox, config.min_pts)))
+//             });
+//         };
+//     }
 
-    dbscan!(100);
-    dbscan!(1000);
-    dbscan!(10000);
+//     dbscan!(100);
+//     dbscan!(1000);
+//     dbscan!(10000);
 
-    group.finish();
+//     group.finish();
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-fn benchmark_e2e(
-    config: &HsDbscanConfig,
-    generator: &impl Generate<2>,
-    c: &mut Criterion,
-) -> Result<()> {
-    let mut group = c.benchmark_group(format!("e2e_{}", generator));
-    group.measurement_time(Duration::from_secs(10));
+// fn benchmark_e2e(
+//     config: &HsDbscanConfig,
+//     generator: &impl Generate<2>,
+//     c: &mut Criterion,
+// ) -> Result<()> {
+//     let mut group = c.benchmark_group(format!("e2e_{}", generator));
+//     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! e2e {
-        ($n:literal, $min_pts:literal) => {
-            let input = generator.generate($n)?;
-            let config = HsDbscanConfig {
-                min_pts: $min_pts,
-                ..*config
-            };
+//     macro_rules! e2e {
+//         ($n:literal, $min_pts:literal) => {
+//             let input = generator.generate($n)?;
+//             let config = HsDbscanConfig {
+//                 min_pts: $min_pts,
+//                 ..*config
+//             };
 
-            group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
-                b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
-            });
-        };
-    }
+//             group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
+//                 b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
+//             });
+//         };
+//     }
 
-    e2e!(100, 10);
-    e2e!(1000, 70);
-    e2e!(10000, 500);
+//     e2e!(100, 10);
+//     e2e!(1000, 70);
+//     e2e!(10000, 500);
 
-    group.finish();
+//     group.finish();
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 fn benchmarks(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
@@ -224,17 +224,17 @@ fn benchmarks(c: &mut Criterion) {
     benchmark_rasterizer_init(config.raster_res.unwrap(), &UniformBox::test_default(), c).unwrap();
     // benchmark_rasterizer_map(config.raster_res.unwrap(), &UniformBox::test_default(), c).unwrap();
 
-    // Proximity
-    benchmark_proximity_init(&config.proximity, &UniformBox::test_default(), c).unwrap();
-    // benchmark_proximity_query(&config.proximity, &UniformBox::test_default(), c).unwrap();
+    // // Proximity
+    // benchmark_proximity_init(&config.proximity, &UniformBox::test_default(), c).unwrap();
+    // // benchmark_proximity_query(&config.proximity, &UniformBox::test_default(), c).unwrap();
 
-    // DBSCAN
-    benchmark_dbscan(&config, &UniformBox::test_default(), c).unwrap();
+    // // DBSCAN
+    // benchmark_dbscan(&config, &UniformBox::test_default(), c).unwrap();
 
-    // End-to-end
-    benchmark_e2e(&config, &UniformBox::test_default(), c).unwrap();
-    benchmark_e2e(&config, &UniformSphere::test_default(), c).unwrap();
-    benchmark_e2e(&config, &TwoUniformSpheres::test_default(), c).unwrap();
+    // // End-to-end
+    // benchmark_e2e(&config, &UniformBox::test_default(), c).unwrap();
+    // benchmark_e2e(&config, &UniformSphere::test_default(), c).unwrap();
+    // benchmark_e2e(&config, &TwoUniformSpheres::test_default(), c).unwrap();
 }
 
 criterion_group!(benches, benchmarks);
@@ -270,9 +270,9 @@ criterion_main!(benches);
 
 // arm64
 
-// rast_init_0.7_uniformbox/100         time:   [2.9818 µs 2.9861 µs 2.9906 µs]
-// rast_init_0.7_uniformbox/1000        time:   [15.827 µs 15.870 µs 15.912 µs]
-// rast_init_0.7_uniformbox/10000       time:   [140.60 µs 141.54 µs 142.49 µs]
+// rast_init_0.7_uniformbox/100         time:   [2.7051 µs 2.7275 µs 2.7644 µs]
+// rast_init_0.7_uniformbox/1000        time:   [13.596 µs 13.644 µs 13.692 µs]
+// rast_init_0.7_uniformbox/10000       time:   [122.26 µs 123.31 µs 124.29 µs]
 
 // prox_init_L2Squared_uniformbox/100   time:   [12.333 µs 12.360 µs 12.392 µs]
 // prox_init_L2Squared_uniformbox/1000  time:   [925.37 µs 928.65 µs 932.20 µs]

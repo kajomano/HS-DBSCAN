@@ -22,8 +22,8 @@ impl<const NDIMS: usize> Generate<NDIMS> for UniformBox<NDIMS> {
 
         let mut rng = StdRng::from_seed([1; 32]);
 
-        Ok(FloatMatrixType::<NDIMS>::from_fn(n_pts, |_, col| {
-            rng.random_range((self.center[col] - (self.size))..(self.center[col] + (self.size)))
+        Ok(FloatMatrixType::<NDIMS>::from_fn(n_pts, |dim, _| {
+            rng.random_range((self.center[dim] - (self.size))..(self.center[dim] + (self.size)))
         }))
     }
 }
@@ -51,9 +51,9 @@ impl<const NDIMS: usize> Generate<NDIMS> for UniformSphere<NDIMS> {
         let mut points =
             FloatMatrixType::<NDIMS>::from_fn(n_pts, |_, _| normal_dist.sample(&mut rng));
 
-        let center = FloatMatrixType::<NDIMS>::from_row_slice(&self.center);
+        let center = FloatMatrixType::<NDIMS>::from_column_slice(&self.center);
 
-        for mut point in points.row_iter_mut() {
+        for mut point in points.column_iter_mut() {
             let mut u: FloatType = rng.random_range(0.0..1.0);
             u = u.powf(1.0 / (NDIMS as FloatType)) * self.radius;
             point *= u / point.norm();
@@ -114,11 +114,9 @@ impl<const NDIMS: usize> Generate<NDIMS> for TwoUniformSpheres<NDIMS> {
             radius: self.radius,
         };
 
-        Ok(stack!(
-            noise.generate(n_noise)?;
-            sphere_1.generate(n_sphere)?;
-            sphere_2.generate(n_sphere)?;
-        ))
+        Ok(
+            stack!(noise.generate(n_noise)?, sphere_1.generate(n_sphere)?, sphere_2.generate(n_sphere)?;),
+        )
     }
 }
 
@@ -134,7 +132,7 @@ pub(crate) mod test {
         generate::{TwoUniformSpheres, UniformBox, UniformSphere},
         types::{FloatMatrixType, FloatType},
     };
-    use nalgebra::{Const, RowVector};
+    use nalgebra::{Const, Vector};
 
     impl<const NDIMS: usize> TestDefault for UniformBox<NDIMS> {
         fn test_default() -> Self {
@@ -176,10 +174,10 @@ pub(crate) mod test {
         point_2: [FloatType; NDIMS],
         n_2: usize,
     ) -> FloatMatrixType<NDIMS> {
-        let mut rows = vec![RowVector::<FloatType, Const<NDIMS>, _>::from_row_slice(&point_1); n_1];
-        rows.append(
-            &mut vec![RowVector::<FloatType, Const<NDIMS>, _>::from_row_slice(&point_2); n_2],
+        let mut cols = vec![Vector::<FloatType, Const<NDIMS>, _>::from_column_slice(&point_1); n_1];
+        cols.append(
+            &mut vec![Vector::<FloatType, Const<NDIMS>, _>::from_column_slice(&point_2); n_2],
         );
-        FloatMatrixType::from_rows(&rows)
+        FloatMatrixType::from_columns(&cols)
     }
 }

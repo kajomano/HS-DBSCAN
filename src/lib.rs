@@ -35,8 +35,7 @@ pub fn hs_dbscan<const NDIMS: usize>(
         let (input, weights) = rasterizer.rasterize();
 
         // Create a proximity calculator
-        let prox =
-            MatrixProximity::new(input, weights, config.proximity.eps, &config.proximity.norm)?;
+        let prox = MatrixProximity::new(input, weights, &config.proximity)?;
 
         // Run dbscan and map the cluster IDs back to the original input points
         rasterizer.map_back(&dbscan(&prox, config.min_pts))
@@ -45,8 +44,7 @@ pub fn hs_dbscan<const NDIMS: usize>(
         let prox = MatrixProximity::new(
             input,
             &OVector::<IndexType, Dyn>::repeat(input.nrows(), 1),
-            config.proximity.eps,
-            &config.proximity.norm,
+            &config.proximity,
         )?;
 
         // Run dbscan

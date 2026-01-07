@@ -1,8 +1,7 @@
 use crate::types::{FloatMatrixType, FloatType, IndexType, IndexVectorType, RasterType};
-use eyre::{OptionExt, Result, ensure};
+use eyre::{Result, ensure};
 use indexmap::IndexMap;
 use nalgebra::{Const, Dyn, OMatrix, OVector};
-use num::{NumCast, Zero};
 use rapidhash::fast;
 
 pub struct Rasterizer<const NDIMS: usize> {
@@ -12,12 +11,9 @@ pub struct Rasterizer<const NDIMS: usize> {
 }
 
 impl<const NDIMS: usize> Rasterizer<NDIMS> {
-    pub fn new(input: &FloatMatrixType<NDIMS>, raster_res: f64) -> Result<Self> {
-        let raster_res = <FloatType as NumCast>::from(raster_res)
-            .ok_or_eyre("Couldn't cast raster_res to FloatType")?;
-
+    pub fn new(input: &FloatMatrixType<NDIMS>, raster_res: FloatType) -> Result<Self> {
         ensure!(input.ncols() <= IndexType::MAX as usize);
-        ensure!(raster_res > <FloatType as Zero>::zero());
+        ensure!(raster_res > 0.0);
 
         let mut bin_map =
             IndexMap::<[RasterType; NDIMS], IndexType, fast::GlobalState>::with_hasher(
@@ -102,7 +98,7 @@ mod test {
     #[case([-0.01, -0.01], 1.0, [-1.0, -1.0])]
     fn test_rasterizer_bins(
         #[case] input: [FloatType; 2],
-        #[case] raster_res: f64,
+        #[case] raster_res: FloatType,
         #[case] expected: [FloatType; 2],
     ) {
         assert_relative_eq!(
@@ -125,7 +121,7 @@ mod test {
         #[case] n_1: usize,
         #[case] point_2: [FloatType; 2],
         #[case] n_2: usize,
-        #[case] raster_res: f64,
+        #[case] raster_res: FloatType,
         #[case] expected_centroids: &[FloatType],
         #[case] expected_weights: &[IndexType],
     ) {

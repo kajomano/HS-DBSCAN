@@ -26,7 +26,7 @@ impl<const NDIMS: usize> Rasterizer<NDIMS> {
             input.ncols(),
             (input / raster_res)
                 .iter()
-                .map(|&val| val.floor() as RasterType),
+                .map(|val| val.floor() as RasterType),
         );
 
         // Iterate over the binned points and assign them to bins

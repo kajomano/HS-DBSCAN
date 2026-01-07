@@ -11,7 +11,7 @@ use nalgebra::{Dyn, OVector};
 pub mod config;
 // pub mod dbscan;
 pub mod generate;
-// pub mod proximity;
+pub mod proximity;
 pub mod rasterizer;
 pub mod types;
 

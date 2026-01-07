@@ -10,22 +10,22 @@ use std::ops::SubAssign;
 
 // NOTE: the bound on S is not enforced through type aliases, so add it as a bound on the function too!
 #[allow(type_alias_bounds)]
-type RowVectorViewType<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>> =
-    Matrix<FloatType, Const<1>, Const<NDIMS>, S>;
+type VectorViewType<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>> =
+    Matrix<FloatType, Const<NDIMS>, Const<1>, S>;
 
 trait Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
         &self,
-        input: &RowVectorViewType<NDIMS, S>,
+        input: &VectorViewType<NDIMS, S>,
     ) -> FloatType;
 }
 
 struct L1Norm;
 
 impl Norm for L1Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
         &self,
-        input: &RowVectorViewType<NDIMS, S>,
+        input: &VectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.apply_norm(&LpNorm(1))
     }
@@ -34,9 +34,9 @@ impl Norm for L1Norm {
 struct L2Norm;
 
 impl Norm for L2Norm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
         &self,
-        input: &RowVectorViewType<NDIMS, S>,
+        input: &VectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.norm()
     }
@@ -45,9 +45,9 @@ impl Norm for L2Norm {
 struct L2SquaredNorm;
 
 impl Norm for L2SquaredNorm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
         &self,
-        input: &RowVectorViewType<NDIMS, S>,
+        input: &VectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.norm_squared()
     }
@@ -56,9 +56,9 @@ impl Norm for L2SquaredNorm {
 struct LinfNorm;
 
 impl Norm for LinfNorm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<1>, Const<NDIMS>>>(
+    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
         &self,
-        input: &RowVectorViewType<NDIMS, S>,
+        input: &VectorViewType<NDIMS, S>,
     ) -> FloatType {
         input.apply_norm(&UniformNorm)
     }
@@ -86,8 +86,8 @@ impl MatrixProximity {
         weights: &Vector<IndexType, Dyn, S>,
         config: &ProximityConfig,
     ) -> Result<Self> {
-        ensure!(input.nrows() <= IndexType::MAX as usize);
-        ensure!(input.nrows() == weights.nrows());
+        ensure!(input.ncols() <= IndexType::MAX as usize);
+        ensure!(input.ncols() == weights.nrows());
         ensure!(config.eps >= 0.0);
 
         let proximities = match config.norm {
@@ -102,32 +102,34 @@ impl MatrixProximity {
         Ok(Self { proximities })
     }
 
-    /// Calculate the pairwise proximity between all input points. Returns an NxN complete proximity matrix, in which 0
-    /// means outside of the proximity, and anything larger than 0 means inside the proximity.
+    /// Calculate the pairwise proximity between all input points.
+    ///
+    /// Returns an NxN complete proximity matrix, in which 0 means outside of the proximity, and anything larger than 0
+    /// means inside the proximity. Larger than 0 values in the proximity matrix contain the weight of the point.
     fn pairwise_proximities<const NDIMS: usize, N: Norm, S: Storage<IndexType, Dyn>>(
         input: &FloatMatrixType<NDIMS>,
         weights: &Vector<IndexType, Dyn, S>,
         norm: N,
         eps: FloatType,
     ) -> OMatrix<IndexType, Dyn, Dyn> {
-        let mut buffer = FloatMatrixType::zeros(input.nrows());
-        let mut proximities = OMatrix::<IndexType, Dyn, Dyn>::zeros(input.nrows(), input.nrows());
+        let n = input.ncols();
 
-        let n = input.nrows();
+        let mut buffer = FloatMatrixType::<NDIMS>::zeros(n);
+        let mut proximities = OMatrix::<IndexType, Dyn, Dyn>::zeros(n, n);
 
         // Calculate pairwise proximities. Only calculates the lower diagonal!
         for (mut proximities_col, (i, anchor)) in proximities
             .column_iter_mut()
-            .zip(input.row_iter().enumerate())
+            .zip(input.column_iter().enumerate())
         {
             // View for only working on the lower triangle
-            let input_view = input.rows(i, n - i);
-            let mut buffer_view = buffer.rows_mut(i, n - i);
+            let input_view = input.columns(i, n - i);
+            let mut buffer_view = buffer.columns_mut(i, n - i);
             let mut proximities_col_view = proximities_col.rows_mut(i, n - i);
 
             // buffer = anchor.repeat()
-            for mut row in buffer_view.row_iter_mut() {
-                row.copy_from(&anchor)
+            for mut col in buffer_view.column_iter_mut() {
+                col.copy_from(&anchor)
             }
 
             // buffer = buffer - input
@@ -136,10 +138,10 @@ impl MatrixProximity {
             // Calculate norm, threshold proximity
             // NOTE: even though this temp can be avoided, somehow this is faster
             let temp_proximities = OVector::<IndexType, Dyn>::from_iterator(
-                buffer_view.nrows(),
+                buffer_view.ncols(),
                 buffer_view
-                    .row_iter()
-                    .map(|row| if norm.apply(&row) <= eps { 1 } else { 0 }),
+                    .column_iter()
+                    .map(|col| if norm.apply(&col) <= eps { 1 } else { 0 }),
             );
 
             // Store in proximities cole
@@ -180,7 +182,7 @@ mod test {
         types::{FloatMatrixType, FloatType, IndexType},
     };
     use approx::assert_relative_eq;
-    use nalgebra::{Dyn, OMatrix, OVector, RowVector2};
+    use nalgebra::{Dyn, OMatrix, OVector, Vector2};
     use rstest::rstest;
 
     fn f(num: FloatType) -> FloatType {
@@ -200,7 +202,7 @@ mod test {
         #[case] expected: FloatType,
     ) {
         assert_relative_eq!(
-            norm.apply(&RowVector2::from_row_slice(&input)),
+            norm.apply(&Vector2::from_column_slice(&input)),
             expected,
             epsilon = FloatType::EPSILON
         );

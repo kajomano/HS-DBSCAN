@@ -18,7 +18,7 @@ pub mod types;
 /// High-Speed DBSCAN algorithm.
 ///
 /// Implements an approximate [DBSCAN](resources/dbscan.pdf) algorithm, with focus on execution speed for smaller
-/// datasets (~1k-10k points).
+/// datasets (~100-10k points).
 ///
 /// The approximate nature of the algorithm comes from a quantization/binning/rasterization step before the clustering,
 /// where each input point is assigned to a rectangular bin. The clustering then runs on the centroids of the bins,

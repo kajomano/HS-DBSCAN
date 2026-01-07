@@ -51,7 +51,7 @@ impl Dbscan {
         }
     }
 
-    /// Reecursively expand a cluster around a core point.
+    /// Recursively expand a cluster around a core point.
     ///
     /// Exactly implements the algorithm described in the DBSCAN paper, which can be found in `./resources/dbscan.pdf`.
     unsafe fn expand_cluster<P: Proximity>(

@@ -75,7 +75,7 @@
 
 - [x] Plots
   - [x] Moar plots
-- [ ] Fix the plotting
+- [x] Fix the plotting
 
 - [x] Try converting to column-major-friendly layout for speed
   - [x] Rename NCOLS to NDIMS

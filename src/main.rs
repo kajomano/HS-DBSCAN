@@ -18,7 +18,10 @@ use hs_dbscan::{
     hs_dbscan,
     types::{FloatMatrixType, IndexType, IndexVectorType},
 };
-use std::{fs::File, path::Path};
+use std::{
+    fs::{File, create_dir_all},
+    path::Path,
+};
 
 const COLORS: [[u8; 3]; 5] = [
     [31, 119, 180],
@@ -58,8 +61,8 @@ fn create_datasets<const NDIMS: usize>(
         .collect();
 
     // Assign points to datasets
-    for (point, id) in input.row_iter().zip(cluster_ids.iter()) {
-        datasets[*id as usize].add_point((point[(0, 0)] as f64, point[(0, 1)] as f64));
+    for (point, id) in input.column_iter().zip(cluster_ids.iter()) {
+        datasets[*id as usize].add_point((point[(0, 0)] as f64, point[(1, 0)] as f64));
     }
 
     datasets
@@ -114,7 +117,9 @@ fn main() -> Result<()> {
     // n_pts: 1000  - min_pts: 70
     // n_pts: 10000 - min_pts: 500
 
-    generate_plot(UniformBox::test_default(), 1000)?;
-    generate_plot(UniformSphere::test_default(), 1000)?;
-    generate_plot(TwoUniformSpheres::test_default(), 1000)
+    create_dir_all(Path::new("./plots"))?;
+
+    generate_plot(UniformBox::test_default(), 10000)?;
+    generate_plot(UniformSphere::test_default(), 10000)?;
+    generate_plot(TwoUniformSpheres::test_default(), 10000)
 }

@@ -4,5 +4,5 @@
 		"eps": 1.0,
 		"norm": "L2Squared"
 	},
-	"min_pts": 70
+	"min_pts": 500
 }

@@ -2,7 +2,7 @@
 
 # High-Speed DBSCAN
 
-This repository implements an approximate [DBSCAN](resources/dbscan.pdf) algorithm, with focus on execution speed for smaller datasets (~1k-10k points).
+This repository implements an approximate [DBSCAN](resources/dbscan.pdf) algorithm, with focus on execution speed for smaller datasets (~100-10k points).
 
 ## Rasterization
 

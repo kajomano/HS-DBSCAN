@@ -242,7 +242,7 @@ criterion_main!(benches);
 
 // =====================================================================================================================
 
-// x86_64
+// x86_64 (needs rerun w/ column-major friendly)
 
 // rast_init_0.7_uniformbox/100         time:   [2.6149 µs 2.6197 µs 2.6248 µs]
 // rast_init_0.7_uniformbox/1000        time:   [13.064 µs 13.083 µs 13.106 µs]

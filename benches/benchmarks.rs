@@ -16,9 +16,9 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use eyre::Result;
 use hs_dbscan::{
     config::{HsDbscanConfig, ProximityConfig, test::TestDefault},
-    // dbscan::dbscan,
+    dbscan::dbscan,
     generate::{Generate, TwoUniformSpheres, UniformBox, UniformSphere},
-    // hs_dbscan,
+    hs_dbscan,
     proximity::{MatrixProximity, Proximity},
     rasterizer::Rasterizer,
     types::{FloatType, IndexVectorType},
@@ -155,67 +155,67 @@ fn benchmark_proximity_query(
     Ok(())
 }
 
-// fn benchmark_dbscan(
-//     config: &HsDbscanConfig,
-//     generator: &impl Generate<2>,
-//     c: &mut Criterion,
-// ) -> Result<()> {
-//     let mut group = c.benchmark_group(format!("dbscan_{}", generator));
-//     group.measurement_time(Duration::from_secs(10));
+fn benchmark_dbscan(
+    config: &HsDbscanConfig,
+    generator: &impl Generate<2>,
+    c: &mut Criterion,
+) -> Result<()> {
+    let mut group = c.benchmark_group(format!("dbscan_{}", generator));
+    group.measurement_time(Duration::from_secs(10));
 
-//     macro_rules! dbscan {
-//         ($n:literal) => {
-//             let prox = MatrixProximity::new(
-//                 &generator.generate($n)?,
-//                 &IndexVectorType::repeat($n, 1),
-//                 &config.proximity,
-//             )?;
+    macro_rules! dbscan {
+        ($n:literal) => {
+            let prox = MatrixProximity::new(
+                &generator.generate($n)?,
+                &IndexVectorType::repeat($n, 1),
+                &config.proximity,
+            )?;
 
-//             group.bench_function(format!("{}", $n), |b| {
-//                 b.iter(|| black_box(dbscan(&prox, config.min_pts)))
-//             });
-//         };
-//     }
+            group.bench_function(format!("{}", $n), |b| {
+                b.iter(|| black_box(dbscan(&prox, config.min_pts)))
+            });
+        };
+    }
 
-//     dbscan!(100);
-//     dbscan!(1000);
-//     dbscan!(10000);
+    dbscan!(100);
+    dbscan!(1000);
+    dbscan!(10000);
 
-//     group.finish();
+    group.finish();
 
-//     Ok(())
-// }
+    Ok(())
+}
 
-// fn benchmark_e2e(
-//     config: &HsDbscanConfig,
-//     generator: &impl Generate<2>,
-//     c: &mut Criterion,
-// ) -> Result<()> {
-//     let mut group = c.benchmark_group(format!("e2e_{}", generator));
-//     group.measurement_time(Duration::from_secs(10));
+fn benchmark_e2e(
+    config: &HsDbscanConfig,
+    generator: &impl Generate<2>,
+    c: &mut Criterion,
+) -> Result<()> {
+    let mut group = c.benchmark_group(format!("e2e_{}", generator));
+    group.measurement_time(Duration::from_secs(10));
 
-//     macro_rules! e2e {
-//         ($n:literal, $min_pts:literal) => {
-//             let input = generator.generate($n)?;
-//             let config = HsDbscanConfig {
-//                 min_pts: $min_pts,
-//                 ..*config
-//             };
+    macro_rules! e2e {
+        ($n:literal, $min_pts:literal) => {
+            let input = generator.generate($n)?;
+            let config = HsDbscanConfig {
+                min_pts: $min_pts,
+                ..*config
+            };
 
-//             group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
-//                 b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
-//             });
-//         };
-//     }
+            group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
+                b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
+            });
+        };
+    }
 
-//     e2e!(100, 10);
-//     e2e!(1000, 70);
-//     e2e!(10000, 500);
+    e2e!(100, 10);
+    e2e!(1000, 70);
+    e2e!(10000, 500);
 
-//     group.finish();
+    group.finish();
 
-//     Ok(())
-// }
+    Ok(())
+}
 
 fn benchmarks(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
@@ -228,13 +228,13 @@ fn benchmarks(c: &mut Criterion) {
     benchmark_proximity_init(&config.proximity, &UniformBox::test_default(), c).unwrap();
     // benchmark_proximity_query(&config.proximity, &UniformBox::test_default(), c).unwrap();
 
-    // // DBSCAN
-    // benchmark_dbscan(&config, &UniformBox::test_default(), c).unwrap();
+    // DBSCAN
+    benchmark_dbscan(&config, &UniformBox::test_default(), c).unwrap();
 
-    // // End-to-end
-    // benchmark_e2e(&config, &UniformBox::test_default(), c).unwrap();
-    // benchmark_e2e(&config, &UniformSphere::test_default(), c).unwrap();
-    // benchmark_e2e(&config, &TwoUniformSpheres::test_default(), c).unwrap();
+    // End-to-end
+    benchmark_e2e(&config, &UniformBox::test_default(), c).unwrap();
+    benchmark_e2e(&config, &UniformSphere::test_default(), c).unwrap();
+    benchmark_e2e(&config, &TwoUniformSpheres::test_default(), c).unwrap();
 }
 
 criterion_group!(benches, benchmarks);
@@ -278,18 +278,18 @@ criterion_main!(benches);
 // prox_init_L2Squared_uniformbox/1000  time:   [825.85 µs 830.37 µs 836.11 µs]
 // prox_init_L2Squared_uniformbox/10000 time:   [181.64 ms 182.42 ms 183.44 ms]
 
-// dbscan_uniformbox/100                time:   [8.6272 µs 8.6447 µs 8.6691 µs]
-// dbscan_uniformbox/1000               time:   [160.34 µs 160.58 µs 160.88 µs]
-// dbscan_uniformbox/10000              time:   [246.46 ms 247.06 ms 247.70 ms]
+// dbscan_uniformbox/100                time:   [9.2464 µs 9.3014 µs 9.3709 µs]
+// dbscan_uniformbox/1000               time:   [144.95 µs 145.21 µs 145.50 µs]
+// dbscan_uniformbox/10000              time:   [246.26 ms 246.82 ms 247.48 ms]
 
-// e2e_uniformbox/100_10                time:   [17.822 µs 17.889 µs 17.967 µs]
-// e2e_uniformbox/1000_70               time:   [94.207 µs 94.442 µs 94.718 µs]
-// e2e_uniformbox/10000_500             time:   [221.39 µs 221.94 µs 222.53 µs]
+// e2e_uniformbox/100_10                time:   [15.600 µs 15.610 µs 15.620 µs]
+// e2e_uniformbox/1000_70               time:   [80.985 µs 81.439 µs 82.001 µs]
+// e2e_uniformbox/10000_500             time:   [152.57 µs 153.14 µs 153.87 µs]
 
-// e2e_uniformsphere/100_10             time:   [1.3011 µs 1.3054 µs 1.3107 µs]
-// e2e_uniformsphere/1000_70            time:   [9.5780 µs 9.6122 µs 9.6523 µs]
-// e2e_uniformsphere/10000_500          time:   [97.499 µs 98.348 µs 99.225 µs]
+// e2e_uniformsphere/100_10             time:   [957.83 ns 964.58 ns 972.44 ns]
+// e2e_uniformsphere/1000_70            time:   [6.5056 µs 6.5323 µs 6.5703 µs]
+// e2e_uniformsphere/10000_500          time:   [64.627 µs 64.801 µs 65.026 µs]
 
-// e2e_2uniformspheres/100_10           time:   [16.211 µs 16.261 µs 16.310 µs]
-// e2e_2uniformspheres/1000_70          time:   [71.632 µs 71.854 µs 72.071 µs]
-// e2e_2uniformspheres/10000_500        time:   [239.40 µs 240.20 µs 241.09 µs]
+// e2e_2uniformspheres/100_10           time:   [12.812 µs 12.883 µs 12.972 µs]
+// e2e_2uniformspheres/1000_70          time:   [72.641 µs 72.818 µs 73.028 µs]
+// e2e_2uniformspheres/10000_500        time:   [191.33 µs 191.85 µs 192.51 µs]

@@ -144,7 +144,7 @@ impl MatrixProximity {
                     .map(|col| if norm.apply(&col) <= eps { 1 } else { 0 }),
             );
 
-            // Store in proximities cole
+            // Store in proximities col
             proximities_col_view.copy_from(&temp_proximities);
         }
 

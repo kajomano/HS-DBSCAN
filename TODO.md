@@ -76,8 +76,9 @@
 - [x] Plots
   - [x] Moar plots
 
-- [ ] Try converting to column-major-friendly layout for speed
+- [x] Try converting to column-major-friendly layout for speed
   - [x] Rename NCOLS to NDIMS
+  - gave good (~30%) speedup on e2e benchmarks!
 - [ ] Generic proximity, use integers directly from the rasterizer
 
 - [x] Clippy

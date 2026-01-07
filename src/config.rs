@@ -22,7 +22,6 @@ pub struct ProximityConfig {
 pub enum NormConfig {
     L1,
     L2,
-    L2Squared,
     Linf,
 }
 
@@ -55,7 +54,7 @@ pub mod test {
 
     impl TestDefault for NormConfig {
         fn test_default() -> Self {
-            Self::L2Squared
+            Self::L2
         }
     }
 }

@@ -38,17 +38,6 @@ impl Norm for L2Norm {
         &self,
         input: &VectorViewType<NDIMS, S>,
     ) -> FloatType {
-        input.norm()
-    }
-}
-
-struct L2SquaredNorm;
-
-impl Norm for L2SquaredNorm {
-    fn apply<const NDIMS: usize, S: Storage<FloatType, Const<NDIMS>, Const<1>>>(
-        &self,
-        input: &VectorViewType<NDIMS, S>,
-    ) -> FloatType {
         input.norm_squared()
     }
 }
@@ -92,9 +81,8 @@ impl MatrixProximity {
 
         let proximities = match config.norm {
             NormConfig::L1 => Self::pairwise_proximities(input, weights, L1Norm, config.eps),
-            NormConfig::L2 => Self::pairwise_proximities(input, weights, L2Norm, config.eps),
-            NormConfig::L2Squared => {
-                Self::pairwise_proximities(input, weights, L2SquaredNorm, config.eps * config.eps)
+            NormConfig::L2 => {
+                Self::pairwise_proximities(input, weights, L2Norm, config.eps * config.eps)
             }
             NormConfig::Linf => Self::pairwise_proximities(input, weights, LinfNorm, config.eps),
         };
@@ -175,10 +163,7 @@ mod test {
     use crate::{
         config::test::TestDefault,
         generate::test::generate_2_point_dataset,
-        proximity::{
-            L1Norm, L2Norm, L2SquaredNorm, LinfNorm, MatrixProximity, Norm, NormConfig,
-            ProximityConfig,
-        },
+        proximity::{L1Norm, L2Norm, LinfNorm, MatrixProximity, Norm, NormConfig, ProximityConfig},
         types::{FloatMatrixType, FloatType, IndexType},
     };
     use approx::assert_relative_eq;
@@ -193,7 +178,7 @@ mod test {
     #[case(L1Norm, [1.0, 2.0], 3.0)]
     #[case(L1Norm, [1.0, -2.0], 3.0)]
     #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
-    #[case(L2SquaredNorm, [1.0, 2.0], 5.0)]
+    #[case(L2Norm, [1.0, -2.0], f(5.0).sqrt())]
     #[case(LinfNorm, [1.0, 2.0], 2.0)]
     #[case(LinfNorm, [1.0, -2.0], 2.0)]
     fn test_norms<N: Norm>(
@@ -215,8 +200,6 @@ mod test {
     #[case([-2.0, -2.0], [0.0, 0.0], 5.0, NormConfig::L1, 1)]
     #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2, 0)]
     #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2, 1)]
-    #[case([0.0, 0.0], [2.0, 2.0], 2.0, NormConfig::L2Squared, 0)]
-    #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::L2Squared, 1)]
     #[case([0.0, 0.0], [2.0, 2.0], 1.0, NormConfig::Linf, 0)]
     #[case([-2.0, -2.0], [0.0, 0.0], 3.0, NormConfig::Linf, 1)]
     fn test_matrix_proximity_pairs(

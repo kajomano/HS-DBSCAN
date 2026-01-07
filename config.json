@@ -2,7 +2,7 @@
 	"raster_res": 0.7,
 	"proximity": {
 		"eps": 1.0,
-		"norm": "L2Squared"
+		"norm": "L2"
 	},
 	"min_pts": 500
 }

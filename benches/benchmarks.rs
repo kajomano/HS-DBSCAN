@@ -242,6 +242,8 @@ criterion_main!(benches);
 
 // =====================================================================================================================
 
+// x86_64
+
 // rast_init_0.7_uniformbox/100         time:   [2.6149 µs 2.6197 µs 2.6248 µs]
 // rast_init_0.7_uniformbox/1000        time:   [13.064 µs 13.083 µs 13.106 µs]
 // rast_init_0.7_uniformbox/10000       time:   [104.80 µs 104.98 µs 105.19 µs]
@@ -265,3 +267,29 @@ criterion_main!(benches);
 // e2e_2uniformspheres/100_10           time:   [11.973 µs 11.985 µs 11.999 µs]
 // e2e_2uniformspheres/1000_70          time:   [54.093 µs 54.214 µs 54.324 µs]
 // e2e_2uniformspheres/10000_500        time:   [187.89 µs 188.09 µs 188.31 µs]
+
+// arm
+
+// rast_init_0.7_uniformbox/100         time:   [2.9818 µs 2.9861 µs 2.9906 µs]
+// rast_init_0.7_uniformbox/1000        time:   [15.827 µs 15.870 µs 15.912 µs]
+// rast_init_0.7_uniformbox/10000       time:   [140.60 µs 141.54 µs 142.49 µs]
+
+// prox_init_L2Squared_uniformbox/100   time:   [12.333 µs 12.360 µs 12.392 µs]
+// prox_init_L2Squared_uniformbox/1000  time:   [925.37 µs 928.65 µs 932.20 µs]
+// prox_init_L2Squared_uniformbox/10000 time:   [190.36 ms 190.73 ms 191.12 ms]
+
+// dbscan_uniformbox/100                time:   [8.6272 µs 8.6447 µs 8.6691 µs]
+// dbscan_uniformbox/1000               time:   [160.34 µs 160.58 µs 160.88 µs]
+// dbscan_uniformbox/10000              time:   [246.46 ms 247.06 ms 247.70 ms]
+
+// e2e_uniformbox/100_10                time:   [17.822 µs 17.889 µs 17.967 µs]
+// e2e_uniformbox/1000_70               time:   [94.207 µs 94.442 µs 94.718 µs]
+// e2e_uniformbox/10000_500             time:   [221.39 µs 221.94 µs 222.53 µs]
+
+// e2e_uniformsphere/100_10             time:   [1.3011 µs 1.3054 µs 1.3107 µs]
+// e2e_uniformsphere/1000_70            time:   [9.5780 µs 9.6122 µs 9.6523 µs]
+// e2e_uniformsphere/10000_500          time:   [97.499 µs 98.348 µs 99.225 µs]
+
+// e2e_2uniformspheres/100_10           time:   [16.211 µs 16.261 µs 16.310 µs]
+// e2e_2uniformspheres/1000_70          time:   [71.632 µs 71.854 µs 72.071 µs]
+// e2e_2uniformspheres/10000_500        time:   [239.40 µs 240.20 µs 241.09 µs]

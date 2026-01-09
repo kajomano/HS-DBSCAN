@@ -284,11 +284,11 @@ criterion_main!(benches);
 
 // e2e_uniformbox/100_10                time:   [15.600 µs 15.610 µs 15.620 µs]
 // e2e_uniformbox/1000_70               time:   [80.985 µs 81.439 µs 82.001 µs]
-// e2e_uniformbox/10000_500             time:   [152.57 µs 153.14 µs 153.87 µs]
+// e2e_uniformbox/10000_500             time:   [193.41 µs 194.16 µs 195.24 µs]
 
-// e2e_uniformsphere/100_10             time:   [957.83 ns 964.58 ns 972.44 ns]
-// e2e_uniformsphere/1000_70            time:   [6.5056 µs 6.5323 µs 6.5703 µs]
-// e2e_uniformsphere/10000_500          time:   [64.627 µs 64.801 µs 65.026 µs]
+// e2e_uniformsphere/100_10             time:   [1.1065 µs 1.1108 µs 1.1159 µs]
+// e2e_uniformsphere/1000_70            time:   [7.9291 µs 7.9397 µs 7.9513 µs]
+// e2e_uniformsphere/10000_500          time:   [78.961 µs 79.212 µs 79.510 µs]
 
 // e2e_2uniformspheres/100_10           time:   [12.812 µs 12.883 µs 12.972 µs]
 // e2e_2uniformspheres/1000_70          time:   [72.641 µs 72.818 µs 73.028 µs]

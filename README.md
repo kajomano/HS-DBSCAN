@@ -10,12 +10,12 @@ The approximate nature of the algorithm comes from a quantization/binning/raster
 
 The raster interacts with the DBSCAN algorithm's `eps` parameter and the chosen norm. My recommendation is that `raster_res` should be set to:
 - `L1` norm: `raster_res < eps/n_dims`
-- `L2` or `L2Squared` norm: `raster_res < eps/sqrt(n_dims)`
+- `L2` norm: `raster_res < eps/sqrt(n_dims)`
 - `Linf` norm: `raster_res < eps`
 
 The larger the `raster_res` is, the more likely a bin will group more points, thereby speeding up the algorithm.
 
-The curse of dimensionality can cause `eps` and `raster_res` to behave unintuitively on higher-dimensional datasets. To counteract this, I recommend the `Linf` (default is `L2Squared`) norm to be used. This norm works well with the rectangular bins even in higher dimensions, and as a nice side-effect, it is also a little faster to compute than the ususal `L2` norm.
+The curse of dimensionality can cause `eps` and `raster_res` to behave unintuitively on higher-dimensional datasets. To counteract this, I recommend the `Linf` (default is `L2`) norm to be used. This norm works well with the rectangular bins even in higher dimensions, and as a nice side-effect, it is also a little faster to compute than the ususal `L2` norm.
 
 ## Low-bit primitives
 
@@ -29,9 +29,9 @@ All types can be changed in `src/types.rs`.
 
 ## Usage
 
-The example application can be run with:
+The example plotting application can be run with:
 ```bash
-cargo run --release
+cargo run --release --features visualize --bin plotter
 ```
 This takes the configuration values from `config.json`, and produces a scatter plot of a clustering into `plots/`.
 

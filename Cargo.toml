@@ -3,6 +3,9 @@ name = "hs_dbscan"
 version = "1.0.0"
 edition = "2024"
 
+[lib]
+name = "hs_dbscan"
+
 [dependencies]
 nalgebra = "0.34.1"
 rand = "0.9.2"
@@ -17,8 +20,16 @@ rapidhash = "4.2.0"
 serde = "1.0.228"
 serde_json = "1.0.148"
 eyre = "0.6.12"
-dataviz = "0.1.9"
+dataviz = { version = "0.1.9", optional = true }
+
+[features]
+visualize = ["dep:dataviz"]
 
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[[bin]]
+name = "plotter"
+path = "src/bin/plotter.rs"
+required-features = ["visualize"]

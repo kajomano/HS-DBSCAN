@@ -1,6 +1,6 @@
 //! To run the application:
 //! ```
-//! cargo run --release
+//! cargo run --release --features visualize --bin plotter
 //! ```
 
 use dataviz::figure::{

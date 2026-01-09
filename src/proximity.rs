@@ -170,15 +170,11 @@ mod test {
     use nalgebra::{Dyn, OMatrix, OVector, Vector2};
     use rstest::rstest;
 
-    fn f(num: FloatType) -> FloatType {
-        num
-    }
-
     #[rstest]
     #[case(L1Norm, [1.0, 2.0], 3.0)]
     #[case(L1Norm, [1.0, -2.0], 3.0)]
-    #[case(L2Norm, [1.0, 2.0], f(5.0).sqrt())]
-    #[case(L2Norm, [1.0, -2.0], f(5.0).sqrt())]
+    #[case(L2Norm, [1.0, 2.0], 5.0)]
+    #[case(L2Norm, [1.0, -2.0], 5.0)]
     #[case(LinfNorm, [1.0, 2.0], 2.0)]
     #[case(LinfNorm, [1.0, -2.0], 2.0)]
     fn test_norms<N: Norm>(

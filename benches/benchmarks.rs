@@ -183,8 +183,8 @@ fn benchmarks(c: &mut Criterion) {
     let config = HsDbscanConfig::test_default();
 
     // Rasterizer
-    benchmark_rasterizer_init(config.raster_res.unwrap(), &UniformBox::test_default(), c).unwrap();
-    // benchmark_rasterizer_map(config.raster_res.unwrap(), &UniformBox::test_default(), c).unwrap();
+    benchmark_rasterizer_init(config.raster_res, &UniformBox::test_default(), c).unwrap();
+    // benchmark_rasterizer_map(config.raster_res, &UniformBox::test_default(), c).unwrap();
 
     // Proximity
     benchmark_proximity_init(&config.proximity, &UniformBox::test_default(), c).unwrap();

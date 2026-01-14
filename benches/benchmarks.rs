@@ -33,19 +33,13 @@ fn benchmark_rasterizer_init(
     let mut group = c.benchmark_group(format!("rast_init_{}_{}", raster_res, generator));
     group.measurement_time(Duration::from_secs(5));
 
-    macro_rules! rasterizer_init {
-        ($n:literal) => {
-            let input = generator.generate($n)?;
+    for n in [100, 1000, 10000] {
+        let input = generator.generate(n)?;
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(Rasterizer::new(&input, raster_res).unwrap()))
-            });
-        };
+        group.bench_function(format!("{}", n), |b| {
+            b.iter(|| black_box(Rasterizer::new(&input, raster_res).unwrap()))
+        });
     }
-
-    rasterizer_init!(100);
-    rasterizer_init!(1000);
-    rasterizer_init!(10000);
 
     group.finish();
 
@@ -61,21 +55,15 @@ fn benchmark_rasterizer_map(
     let mut group = c.benchmark_group(format!("rast_map_{}_{}", raster_res, generator));
     group.measurement_time(Duration::from_secs(5));
 
-    macro_rules! rasterizer_map {
-        ($n:literal) => {
-            let rasterizer = Rasterizer::new(&generator.generate($n)?, raster_res)?;
-            let (centroids, _) = rasterizer.rasterize();
-            let cluster_ids = IndexVectorType::zeros(centroids.nrows());
+    for n in [100, 1000, 10000] {
+        let rasterizer = Rasterizer::new(&generator.generate(n)?, raster_res)?;
+        let (centroids, _) = rasterizer.rasterize();
+        let cluster_ids = IndexVectorType::zeros(centroids.ncols());
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(rasterizer.map_back(&cluster_ids).unwrap()))
-            });
-        };
+        group.bench_function(format!("{}", n), |b| {
+            b.iter(|| black_box(rasterizer.map_back(&cluster_ids).unwrap()))
+        });
     }
-
-    rasterizer_map!(100);
-    rasterizer_map!(1000);
-    rasterizer_map!(10000);
 
     group.finish();
 
@@ -90,22 +78,14 @@ fn benchmark_proximity_init(
     let mut group = c.benchmark_group(format!("prox_init_{}_{}", proximity_config.norm, generator));
     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! proximity_init {
-        ($n:literal) => {
-            let input = generator.generate($n)?;
-            let weights = IndexVectorType::repeat($n, 1);
+    for n in [100, 1000, 10000] {
+        let input = generator.generate(n)?;
+        let weights = IndexVectorType::repeat(n, 1);
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| {
-                    black_box(MatrixProximity::new(&input, &weights, &proximity_config).unwrap())
-                })
-            });
-        };
+        group.bench_function(format!("{}", n), |b| {
+            b.iter(|| black_box(MatrixProximity::new(&input, &weights, &proximity_config).unwrap()))
+        });
     }
-
-    proximity_init!(100);
-    proximity_init!(1000);
-    proximity_init!(10000);
 
     group.finish();
 
@@ -132,23 +112,17 @@ fn benchmark_proximity_query(
         }
     };
 
-    macro_rules! proximity_query {
-        ($n:literal) => {
-            let prox = MatrixProximity::new(
-                &generator.generate($n)?,
-                &IndexVectorType::repeat($n, 1),
-                &proximity_config,
-            )?;
+    for n in [100, 1000, 10000] {
+        let prox = MatrixProximity::new(
+            &generator.generate(n)?,
+            &IndexVectorType::repeat(n, 1),
+            &proximity_config,
+        )?;
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(inner_fn(&prox, $n)))
-            });
-        };
+        group.bench_function(format!("{}", n), |b| {
+            b.iter(|| black_box(inner_fn(&prox, n)))
+        });
     }
-
-    proximity_query!(100);
-    proximity_query!(1000);
-    proximity_query!(10000);
 
     group.finish();
 
@@ -163,23 +137,17 @@ fn benchmark_dbscan(
     let mut group = c.benchmark_group(format!("dbscan_{}", generator));
     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! dbscan {
-        ($n:literal) => {
-            let prox = MatrixProximity::new(
-                &generator.generate($n)?,
-                &IndexVectorType::repeat($n, 1),
-                &config.proximity,
-            )?;
+    for n in [100, 1000, 10000] {
+        let prox = MatrixProximity::new(
+            &generator.generate(n)?,
+            &IndexVectorType::repeat(n, 1),
+            &config.proximity,
+        )?;
 
-            group.bench_function(format!("{}", $n), |b| {
-                b.iter(|| black_box(dbscan(&prox, config.min_pts)))
-            });
-        };
+        group.bench_function(format!("{}", n), |b| {
+            b.iter(|| black_box(dbscan(&prox, config.min_pts)))
+        });
     }
-
-    dbscan!(100);
-    dbscan!(1000);
-    dbscan!(10000);
 
     group.finish();
 
@@ -194,23 +162,17 @@ fn benchmark_e2e(
     let mut group = c.benchmark_group(format!("e2e_{}", generator));
     group.measurement_time(Duration::from_secs(10));
 
-    macro_rules! e2e {
-        ($n:literal, $min_pts:literal) => {
-            let input = generator.generate($n)?;
-            let config = HsDbscanConfig {
-                min_pts: $min_pts,
-                ..*config
-            };
-
-            group.bench_function(format!("{}_{}", $n, $min_pts), |b| {
-                b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
-            });
+    for (n, min_pts) in [(100, 10), (1000, 70), (10000, 500)] {
+        let input = generator.generate(n)?;
+        let config = HsDbscanConfig {
+            min_pts: min_pts,
+            ..*config
         };
-    }
 
-    e2e!(100, 10);
-    e2e!(1000, 70);
-    e2e!(10000, 500);
+        group.bench_function(format!("{}_{}", n, min_pts), |b| {
+            b.iter(|| black_box(hs_dbscan(&input, &config).unwrap()))
+        });
+    }
 
     group.finish();
 

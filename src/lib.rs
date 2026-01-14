@@ -43,7 +43,7 @@ pub fn hs_dbscan<const NDIMS: usize>(
         // Create a proximity calculator with mock weights
         let prox = MatrixProximity::new(
             input,
-            &OVector::<IndexType, Dyn>::repeat(input.nrows(), 1),
+            &OVector::<IndexType, Dyn>::repeat(input.ncols(), 1),
             &config.proximity,
         )?;
 

@@ -29,9 +29,9 @@ pub fn hs_dbscan<const NDIMS: usize>(
     input: &FloatMatrixType<NDIMS>,
     config: &HsDbscanConfig,
 ) -> Result<IndexVectorType> {
-    if let Some(raster_res) = config.raster_res {
+    if config.raster_res > 0.0 {
         // Rasterize the input
-        let rasterizer = Rasterizer::new(input, raster_res)?;
+        let rasterizer = Rasterizer::new(input, config.raster_res)?;
         let (input, weights) = rasterizer.rasterize();
 
         // Create a proximity calculator

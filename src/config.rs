@@ -5,7 +5,7 @@ use strum_macros::Display;
 /// Top-level configuration struct for HS-DBSCAN.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct HsDbscanConfig {
-    pub raster_res: Option<FloatType>,
+    pub raster_res: FloatType,
     pub proximity: ProximityConfig,
     pub min_pts: IndexType,
 }
@@ -36,7 +36,7 @@ pub mod test {
     impl TestDefault for HsDbscanConfig {
         fn test_default() -> Self {
             Self {
-                raster_res: Some(0.7),
+                raster_res: 0.7,
                 proximity: TestDefault::test_default(),
                 min_pts: 70,
             }

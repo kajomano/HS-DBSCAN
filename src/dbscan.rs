@@ -120,7 +120,7 @@ impl Dbscan {
     /// Set the cluster ID on all seed points.
     fn set_cluster_ids_on_seeds(&mut self, cluster_id: IndexType) {
         for state in self.states.iter_mut() {
-            if state.seed {
+            if state.seed && state.cluster == 0 {
                 state.cluster = cluster_id;
                 state.assigned = true;
             }

@@ -63,18 +63,26 @@ impl Dbscan {
         unsafe {
             let prox_query = prox.query(idx);
 
+            // Not a core point
+            if prox_query.sum() < self.min_pts {
+                let state = self.states.get_unchecked_mut(idx);
+                state.assigned = true;
+                state.cluster = 0;
+                return false;
+            }
+
+            // Core point: make all points in proximity seeds
             for (state, &weight) in self.states.iter_mut().zip(prox_query.iter()) {
                 state.seed = weight > 0;
             }
 
-            // Not a core point
-            if prox_query.sum() < self.min_pts {
-                self.set_cluster_ids_on_seeds(0);
-                return false;
+            // Set the cluster ID on all seed points, remove point itself from seeds.
+            for state in self.states.iter_mut() {
+                if state.seed && state.cluster == 0 {
+                    state.cluster = cluster_id;
+                    state.assigned = true;
+                }
             }
-
-            // Core point: all seeds are density reachable
-            self.set_cluster_ids_on_seeds(cluster_id);
             self.states.get_unchecked_mut(idx).seed = false;
 
             // Iterate over seeds, and add anythinig within their vicinity to the cluster. If the seed is a core point too,
@@ -114,16 +122,6 @@ impl Dbscan {
             }
 
             true
-        }
-    }
-
-    /// Set the cluster ID on all seed points.
-    fn set_cluster_ids_on_seeds(&mut self, cluster_id: IndexType) {
-        for state in self.states.iter_mut() {
-            if state.seed && state.cluster == 0 {
-                state.cluster = cluster_id;
-                state.assigned = true;
-            }
         }
     }
 
